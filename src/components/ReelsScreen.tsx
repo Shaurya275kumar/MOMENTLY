@@ -1,0 +1,146 @@
+import { useEffect, useRef, useState } from 'react';
+import { supabase, type Post } from '../lib/supabase';
+import { fetchReelPosts, toggleLikeDb } from '../lib/posts';
+import { useAuth } from '../lib/auth';
+import CommentsDrawer from './CommentsDrawer';
+import { Heart, MessageCircle, Send, MoreHorizontal, Music2, Play, Volume2, VolumeX, ChevronUp } from 'lucide-react';
+
+export default function ReelsScreen({ onOpenProfile }: { onOpenProfile: (id: string) => void }) {
+  const { user } = useAuth();
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [commentsOpen, setCommentsOpen] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  useEffect(() => {
+    (async () => {
+      if (!user) { setLoading(false); return; }
+      setPosts(await fetchReelPosts(user.id));
+      setLoading(false);
+    })();
+  }, [user]);
+
+  const toggleLike = async (post: Post) => {
+    if (!user) return;
+    setPosts((prev) => prev.map((p) => p.id === post.id ? { ...p, liked_by_me: !p.liked_by_me, like_count: (p.like_count || 0) + (p.liked_by_me ? -1 : 1) } : p));
+    await toggleLikeDb(post, user.id);
+  };
+
+  // Track which reel is in view via IntersectionObserver
+  useEffect(() => {
+    if (!containerRef.current || posts.length === 0) return;
+    const els = Array.from(containerRef.current.querySelectorAll('[data-reel]')) as HTMLElement[];
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting && e.intersectionRatio > 0.6) {
+          const i = Number((e.target as HTMLElement).dataset.idx);
+          setActiveIdx(i);
+        }
+      });
+    }, { root: containerRef.current, threshold: [0.6] });
+    els.forEach((el) => obs.observe(el));
+    return () => obs.disconnect();
+  }, [posts]);
+
+  if (loading) return <div className="text-center ig-gray text-sm py-20">Loading reels…</div>;
+  if (posts.length === 0) return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] ig-gray gap-3">
+      <Play className="w-12 h-12" />
+      <p className="text-sm">No reels yet. Record one with the + button!</p>
+    </div>
+  );
+
+  return (
+    <>
+      <div ref={containerRef} className="h-[calc(100vh-3.5rem)] md:h-screen overflow-y-scroll snap-y snap-mandatory bg-black scroll-smooth">
+        {posts.map((post, i) => (
+          <div key={post.id} data-reel data-idx={i} className="h-full w-full snap-start snap-always relative flex items-center justify-center">
+            <ReelPlayer post={post} active={i === activeIdx} onLike={() => toggleLike(post)} onComments={() => setCommentsOpen(post.id)} onOpenProfile={onOpenProfile} />
+            {i < posts.length - 1 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 text-white/70 animate-bounce">
+                <ChevronUp className="w-6 h-6" />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      {commentsOpen && <CommentsDrawer postId={commentsOpen} onClose={() => setCommentsOpen(null)} />}
+    </>
+  );
+}
+
+function ReelPlayer({ post, active, onLike, onComments, onOpenProfile }: { post: Post; active: boolean; onLike: () => void; onComments: () => void; onOpenProfile: (id: string) => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [muted, setMuted] = useState(true);
+  const [playing, setPlaying] = useState(true);
+
+  // Play/pause based on visibility
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (active) { v.play().then(() => setPlaying(true)).catch(() => {}); }
+    else { v.pause(); }
+  }, [active]);
+
+  const togglePlay = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) { v.play(); setPlaying(true); } else { v.pause(); setPlaying(false); }
+  };
+  const toggleMute = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = !v.muted;
+    setMuted(v.muted);
+  };
+
+  return (
+    <div className="relative w-full h-full flex items-center justify-center">
+      <div className="relative bg-black h-full" style={{ aspectRatio: '9/16', maxHeight: '100%' }}>
+        <video ref={videoRef} src={post.media_url} poster={post.thumbnail_url || undefined} className="w-full h-full object-cover" loop autoPlay muted playsInline onClick={togglePlay} />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
+
+        <button onClick={toggleMute} className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/40 text-white flex items-center justify-center z-10">
+          {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+        </button>
+        {!playing && active && <button onClick={togglePlay} className="absolute inset-0 flex items-center justify-center z-10"><Play className="w-12 h-12 text-white/80" /></button>}
+
+        <div className="absolute left-4 right-16 bottom-4 text-white z-10">
+          <div className="flex items-center gap-2.5 mb-3">
+            <img src={post.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.profiles?.username || 'user')}&background=random`} className="w-8 h-8 rounded-full object-cover ring-2 ring-white/80" alt="" />
+            <button onClick={() => onOpenProfile(post.user_id)} className="font-semibold text-sm hover:underline">{post.profiles?.username}</button>
+          </div>
+          {post.caption && <p className="text-sm leading-snug mb-2 line-clamp-3">{post.caption}</p>}
+          {post.music_tracks && (
+            <div className="flex items-center gap-2 text-xs"><Music2 className="w-3.5 h-3.5 shrink-0" /><span className="truncate">{post.music_tracks.title} · {post.music_tracks.artist}</span></div>
+          )}
+        </div>
+
+        {/* Action rail */}
+        <div className="absolute right-3 bottom-4 flex flex-col items-center gap-5 text-white z-10">
+          <ReelActions post={post} onLike={onLike} onComments={onComments} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReelActions({ post, onLike, onComments }: { post: Post; onLike: () => void; onComments: () => void }) {
+  return (
+    <>
+      <button onClick={onLike} className="flex flex-col items-center gap-1 active:scale-90 transition">
+        <Heart className={`w-7 h-7 ${post.liked_by_me ? 'fill-[#ed4956] text-[#ed4956]' : 'text-white'}`} />
+        <span className="text-xs font-medium text-white">{post.like_count || 0}</span>
+      </button>
+      <button onClick={onComments} className="flex flex-col items-center gap-1 active:scale-90 transition">
+        <MessageCircle className="w-7 h-7 text-white" />
+        <span className="text-xs font-medium text-white">{post.comment_count || 0}</span>
+      </button>
+      <button className="flex flex-col items-center gap-1 active:scale-90 transition">
+        <Send className="w-7 h-7 text-white" />
+      </button>
+      <button className="active:scale-90 transition"><MoreHorizontal className="w-7 h-7 text-white" /></button>
+    </>
+  );
+}
