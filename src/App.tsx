@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from './lib/auth';
-import { supabase } from './lib/supabase';
+import AuthScreen from './components/AuthScreen';
 import ProfileScreen from './components/ProfileScreen';
 import { Loader2, User } from 'lucide-react';
 
@@ -20,48 +20,6 @@ export default function App() {
         </div>
       </header>
       {view === 'profile' && <ProfileScreen onBack={() => setView(null)} />}
-    </div>
-  );
-}
-
-function AuthScreen() {
-  const [mode, setMode] = useState<'signin' | 'signup'>('signup');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState('');
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setBusy(true); setErr('');
-    try {
-      if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({ email, password, options: { data: { username } } });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      }
-    } catch (e) {
-      setErr((e as Error).message);
-    } finally { setBusy(false); }
-  };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-[#fafafa] px-4">
-      <form onSubmit={submit} className="w-full max-w-sm bg-white border border-[#dbdbdb] rounded-xl p-8 space-y-3">
-        <h1 className="text-2xl font-bold text-center text-[#262626] mb-4">DevGram</h1>
-        {mode === 'signup' && <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" className="ig-input py-2.5" required />}
-        <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" type="email" className="ig-input py-2.5" required />
-        <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password" className="ig-input py-2.5" required />
-        {err && <p className="text-xs text-[#ed4956]">{err}</p>}
-        <button disabled={busy} className="w-full py-2 text-sm font-semibold bg-[#0095f6] text-white rounded-lg disabled:opacity-50">{mode === 'signup' ? 'Sign up' : 'Log in'}</button>
-        <p className="text-xs text-center ig-gray pt-2">
-          {mode === 'signup' ? 'Have an account?' : "Don't have one?"}{' '}
-          <button type="button" onClick={() => setMode(mode === 'signup' ? 'signin' : 'signup')} className="text-[#0095f6] font-semibold">{mode === 'signup' ? 'Log in' : 'Sign up'}</button>
-        </p>
-      </form>
     </div>
   );
 }

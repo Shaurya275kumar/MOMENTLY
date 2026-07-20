@@ -27,7 +27,7 @@ export default function CommentsDrawer({ postId, onClose }: { postId: string; on
         .select('id, body, created_at, user_id, profiles!comments_user_id_fkey(username, avatar_url)')
         .eq('post_id', postId)
         .order('created_at', { ascending: true });
-      setComments((data as CommentRow[]) || []);
+      setComments((data as unknown as CommentRow[]) || []);
       setLoading(false);
     })();
   }, [postId]);

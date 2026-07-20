@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { supabase, type Post } from '../lib/supabase';
+import type { Post } from '../lib/supabase';
 import { fetchReelPosts, toggleLikeDb } from '../lib/posts';
 import { useAuth } from '../lib/auth';
 import CommentsDrawer from './CommentsDrawer';
