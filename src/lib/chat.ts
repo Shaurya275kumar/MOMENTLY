@@ -15,6 +15,7 @@ export type MessageRow = {
   sender_id: string;
   body: string;
   created_at: string;
+  read_at: string | null;
 };
 
 export async function getOrCreateDm(otherUserId: string): Promise<string> {
@@ -73,10 +74,10 @@ export async function fetchConversations(meId: string): Promise<ConversationRow[
 export async function fetchMessages(conversationId: string): Promise<MessageRow[]> {
   const { data } = await supabase
     .from('messages')
-    .select('id, conversation_id, sender_id, body, created_at')
+    .select('id, conversation_id, sender_id, body, created_at, read_at')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true })
-    .limit(200);
+    .limit(500);
   return (data as MessageRow[]) || [];
 }
 
@@ -87,6 +88,7 @@ export async function sendMessage(conversationId: string, body: string): Promise
   if (error) throw error;
 }
 
+/** Mark the conversation as read (updates conversation_members.last_read_at) */
 export async function markRead(conversationId: string): Promise<void> {
   const { error } = await supabase
     .from('conversation_members')
@@ -96,9 +98,104 @@ export async function markRead(conversationId: string): Promise<void> {
   if (error) throw error;
 }
 
+/** Mark all incoming messages in a conversation as read (sets messages.read_at) */
+export async function markMessagesRead(conversationId: string): Promise<void> {
+  const { error } = await supabase.rpc('mark_messages_read', { p_conversation: conversationId });
+  if (error) throw error;
+}
+
+/** Realtime subscription for new/updated messages in a conversation */
 export function subscribeMessages(conversationId: string, cb: () => void) {
   return supabase
     .channel(`messages:${conversationId}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` }, cb)
     .subscribe();
+}
+
+/** Realtime subscription for new messages across all of the user's conversations (for inbox updates) */
+export function subscribeInbox(meId: string, cb: () => void) {
+  return supabase
+    .channel(`inbox:${meId}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, cb)
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, cb)
+    .subscribe();
+}
+
+/* ------------------------------------------------------------------ */
+/* Presence — who is online                                            */
+/* ------------------------------------------------------------------ */
+
+export type PresenceState = {
+  userId: string;
+  onlineAt: string;
+};
+
+/** Track the current user as online in a conversation presence channel. */
+export function trackPresence(conversationId: string, userId: string) {
+  const channel = supabase.channel(`presence:${conversationId}`, {
+    config: { presence: { key: userId } },
+  });
+  channel
+    .on('presence', { event: 'sync' }, () => {})
+    .on('presence', { event: 'join' }, () => {})
+    .on('presence', { event: 'leave' }, () => {})
+    .subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await channel.track({ userId, onlineAt: new Date().toISOString() } satisfies PresenceState);
+      }
+    });
+  return channel;
+}
+
+export function getOnlineUserIds(channel: ReturnType<typeof trackPresence>): Set<string> {
+  const state = channel.presenceState<{ userId: string; onlineAt: string }>();
+  const ids = new Set<string>();
+  Object.values(state).forEach((presences) => {
+    presences.forEach((p) => ids.add(p.userId));
+  });
+  return ids;
+}
+
+export function onPresenceChange(channel: ReturnType<typeof trackPresence>, cb: (onlineIds: Set<string>) => void) {
+  const handler = () => cb(getOnlineUserIds(channel));
+  channel.on('presence', { event: 'sync' }, handler);
+  return () => {};
+}
+
+/* ------------------------------------------------------------------ */
+/* Typing indicators — broadcast                                       */
+/* ------------------------------------------------------------------ */
+
+export function sendTyping(channel: ReturnType<typeof trackPresence>, userId: string) {
+  channel.send({ type: 'broadcast', event: 'typing', payload: { userId } });
+}
+
+export function sendStopTyping(channel: ReturnType<typeof trackPresence>, userId: string) {
+  channel.send({ type: 'broadcast', event: 'stop_typing', payload: { userId } });
+}
+
+export function onTyping(
+  channel: ReturnType<typeof trackPresence>,
+  otherId: string,
+  onTypingCb: () => void,
+  onStopCb: () => void,
+) {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  channel.on('broadcast', { event: 'typing' }, (msg) => {
+    if (msg.payload?.userId === otherId) {
+      onTypingCb();
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        onStopCb();
+        timer = null;
+      }, 3500);
+    }
+  });
+  channel.on('broadcast', { event: 'stop_typing' }, (msg) => {
+    if (msg.payload?.userId === otherId) {
+      if (timer) clearTimeout(timer);
+      onStopCb();
+      timer = null;
+    }
+  });
 }
