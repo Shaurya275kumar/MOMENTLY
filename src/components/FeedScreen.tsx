@@ -3,6 +3,7 @@ import { supabase, type Post, type Profile } from '../lib/supabase';
 import { fetchFeedPosts, toggleLikeDb } from '../lib/posts';
 import { useAuth } from '../lib/auth';
 import CommentsDrawer from './CommentsDrawer';
+import StoriesBar from './StoriesBar';
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Music2 } from 'lucide-react';
 
 export default function FeedScreen({ onOpenProfile }: { onOpenProfile: (id: string) => void }) {
@@ -30,7 +31,7 @@ export default function FeedScreen({ onOpenProfile }: { onOpenProfile: (id: stri
   return (
     <div className="flex justify-center">
       <div className="w-full max-w-[470px] md:mr-8 px-0 md:px-4 py-4">
-        <StoriesRow onOpenProfile={onOpenProfile} />
+        <StoriesBar onOpenProfile={onOpenProfile} />
         {posts.length === 0 && <p className="text-center ig-gray mt-20">No posts yet. Create one with the + button!</p>}
         <div className="space-y-6">
           {posts.map((post) => (
@@ -74,28 +75,6 @@ export default function FeedScreen({ onOpenProfile }: { onOpenProfile: (id: stri
         <SuggestionsRail onOpenProfile={onOpenProfile} />
       </div>
       {commentsFor && <CommentsDrawer postId={commentsFor} onClose={() => setCommentsFor(null)} />}
-    </div>
-  );
-}
-
-function StoriesRow({ onOpenProfile }: { onOpenProfile: (id: string) => void }) {
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from('profiles').select('*').limit(15);
-      setProfiles((data as Profile[]) || []);
-    })();
-  }, []);
-  return (
-    <div className="flex gap-4 overflow-x-auto px-4 py-4 scrollbar-hide md:border md:border-[#dbdbdb] md:rounded-md bg-white">
-      {profiles.map((p) => (
-        <button key={p.id} onClick={() => onOpenProfile(p.id)} className="flex flex-col items-center gap-1 flex-shrink-0">
-          <div className="w-14 h-14 rounded-full p-[2px] bg-gradient-to-tr from-[#feda75] via-[#d62976] to-[#962fbf]">
-            <img src={p.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.username)}&background=random`} className="w-full h-full rounded-full object-cover border-2 border-white" alt="" />
-          </div>
-          <span className="text-xs text-[#262626] max-w-[56px] truncate">{p.username}</span>
-        </button>
-      ))}
     </div>
   );
 }
