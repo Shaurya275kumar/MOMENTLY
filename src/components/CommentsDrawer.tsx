@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
+import { createCommentNotification } from '../lib/posts';
 import { X, Loader2 } from 'lucide-react';
 
 type CommentRow = {
@@ -47,6 +48,8 @@ export default function CommentsDrawer({ postId, onClose }: { postId: string; on
       return;
     }
     if (data) {
+      const { data: post } = await supabase.from('posts').select('user_id').eq('id', postId).maybeSingle();
+      if (post) await createCommentNotification(post.user_id, user.id, postId, body.trim());
       setComments((prev) => [
         ...prev,
         { ...data, profiles: { username: profile?.username || 'you', avatar_url: profile?.avatar_url || null } },

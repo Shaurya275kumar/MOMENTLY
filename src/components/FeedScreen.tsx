@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase, type Post, type Profile } from '../lib/supabase';
-import { fetchFeedPosts, toggleLikeDb } from '../lib/posts';
+import { fetchFeedPosts, toggleLikeDb, toggleSaveDb } from '../lib/posts';
 import { useAuth } from '../lib/auth';
 import CommentsDrawer from './CommentsDrawer';
 import StoriesBar from './StoriesBar';
@@ -26,6 +26,12 @@ export default function FeedScreen({ onOpenProfile }: { onOpenProfile: (id: stri
     await toggleLikeDb(post, user.id);
   };
 
+  const toggleSave = async (post: Post) => {
+    if (!user) return;
+    setPosts((prev) => prev.map((p) => p.id === post.id ? { ...p, saved_by_me: !p.saved_by_me } : p));
+    await toggleSaveDb(post.id, user.id, post.saved_by_me);
+  };
+
   if (loading) return <div className="text-center ig-gray text-sm py-20">Loading feed…</div>;
 
   return (
@@ -35,38 +41,7 @@ export default function FeedScreen({ onOpenProfile }: { onOpenProfile: (id: stri
         {posts.length === 0 && <p className="text-center ig-gray mt-20">No posts yet. Create one with the + button!</p>}
         <div className="space-y-6">
           {posts.map((post) => (
-            <article key={post.id} className="bg-white md:border md:border-[#dbdbdb] rounded-none md:rounded-md overflow-hidden">
-              <header className="flex items-center gap-3 px-4 py-3">
-                <img src={post.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.profiles?.username || 'user')}&background=random`} className="w-8 h-8 rounded-full object-cover" alt="" />
-                <button onClick={() => onOpenProfile(post.user_id)} className="text-sm font-semibold text-[#262626] hover:underline">{post.profiles?.username}</button>
-                <span className="text-xs ig-gray">· {timeAgo(post.created_at)}</span>
-                <button className="ml-auto"><MoreHorizontal className="w-5 h-5 text-[#262626]" /></button>
-              </header>
-              {post.media_type === 'reel' ? (
-                <video src={post.media_url} poster={post.thumbnail_url || undefined} controls loop playsInline className="w-full max-h-[750px] object-cover bg-black" />
-              ) : (
-                <img src={post.media_url} className="w-full max-h-[750px] object-cover" alt={post.caption || ''} />
-              )}
-              <div className="px-4 pt-2 pb-3">
-                <div className="flex items-center gap-4 py-2">
-                  <button onClick={() => toggleLike(post)} className="active:scale-90 transition"><Heart className={`w-6 h-6 ${post.liked_by_me ? 'fill-[#ed4956] text-[#ed4956]' : 'text-[#262626]'}`} /></button>
-                  <button onClick={() => setCommentsFor(post.id)} className="active:scale-90 transition"><MessageCircle className="w-6 h-6 text-[#262626]" /></button>
-                  <Send className="w-6 h-6 text-[#262626]" />
-                  <button className="ml-auto"><Bookmark className="w-6 h-6 text-[#262626]" /></button>
-                </div>
-                <p className="text-sm font-semibold text-[#262626]">{post.like_count || 0} likes</p>
-                {post.comment_count ? (
-                  <button onClick={() => setCommentsFor(post.id)} className="text-sm ig-gray mt-0.5">View all {post.comment_count} comments</button>
-                ) : null}
-                {post.caption && (
-                  <p className="text-sm text-[#262626] mt-1"><span className="font-semibold mr-1.5">{post.profiles?.username}</span>{post.caption}</p>
-                )}
-                {post.music_tracks && (
-                  <div className="flex items-center gap-1.5 text-xs ig-gray mt-2"><Music2 className="w-3.5 h-3.5" /> {post.music_tracks.title} · {post.music_tracks.artist}</div>
-                )}
-                <p className="text-[10px] ig-gray uppercase mt-2 tracking-wide">{new Date(post.created_at).toLocaleDateString()}</p>
-              </div>
-            </article>
+            <FeedPost key={post.id} post={post} onLike={toggleLike} onSave={toggleSave} onComments={setCommentsFor} onOpenProfile={onOpenProfile} />
           ))}
         </div>
       </div>
@@ -76,6 +51,69 @@ export default function FeedScreen({ onOpenProfile }: { onOpenProfile: (id: stri
       </div>
       {commentsFor && <CommentsDrawer postId={commentsFor} onClose={() => setCommentsFor(null)} />}
     </div>
+  );
+}
+
+function FeedPost({ post, onLike, onSave, onComments, onOpenProfile }: { post: Post; onLike: (p: Post) => void; onSave: (p: Post) => void; onComments: (id: string) => void; onOpenProfile: (id: string) => void }) {
+  const [burst, setBurst] = useState(false);
+  const lastTapRef = useRef<number>(0);
+
+  const handleDoubleTap = () => {
+    if (!post.liked_by_me) onLike(post);
+    setBurst(true);
+    setTimeout(() => setBurst(false), 800);
+  };
+
+  const handleImageTap = () => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      handleDoubleTap();
+      lastTapRef.current = 0;
+    } else {
+      lastTapRef.current = now;
+    }
+  };
+
+  return (
+    <article className="bg-white md:border md:border-[#dbdbdb] rounded-none md:rounded-md overflow-hidden">
+      <header className="flex items-center gap-3 px-4 py-3">
+        <img src={post.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.profiles?.username || 'user')}&background=random`} className="w-8 h-8 rounded-full object-cover" alt="" />
+        <button onClick={() => onOpenProfile(post.user_id)} className="text-sm font-semibold text-[#262626] hover:underline">{post.profiles?.username}</button>
+        <span className="text-xs ig-gray">· {timeAgo(post.created_at)}</span>
+        <button className="ml-auto"><MoreHorizontal className="w-5 h-5 text-[#262626]" /></button>
+      </header>
+      <div className="relative" onClick={handleImageTap}>
+        {post.media_type === 'reel' ? (
+          <video src={post.media_url} poster={post.thumbnail_url || undefined} controls loop playsInline className="w-full max-h-[750px] object-cover bg-black" />
+        ) : (
+          <img src={post.media_url} className="w-full max-h-[750px] object-cover cursor-pointer" alt={post.caption || ''} />
+        )}
+        {burst && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <Heart className="w-20 h-20 text-white fill-white drop-shadow-lg animate-heart-burst" />
+          </div>
+        )}
+      </div>
+      <div className="px-4 pt-2 pb-3">
+        <div className="flex items-center gap-4 py-2">
+          <button onClick={() => onLike(post)} className="active:scale-90 transition"><Heart className={`w-6 h-6 ${post.liked_by_me ? 'fill-[#ed4956] text-[#ed4956]' : 'text-[#262626]'}`} /></button>
+          <button onClick={() => onComments(post.id)} className="active:scale-90 transition"><MessageCircle className="w-6 h-6 text-[#262626]" /></button>
+          <Send className="w-6 h-6 text-[#262626]" />
+          <button onClick={() => onSave(post)} className="ml-auto active:scale-90 transition"><Bookmark className={`w-6 h-6 ${post.saved_by_me ? 'fill-[#262626] text-[#262626]' : 'text-[#262626]'}`} /></button>
+        </div>
+        <p className="text-sm font-semibold text-[#262626]">{post.like_count || 0} likes</p>
+        {post.comment_count ? (
+          <button onClick={() => onComments(post.id)} className="text-sm ig-gray mt-0.5">View all {post.comment_count} comments</button>
+        ) : null}
+        {post.caption && (
+          <p className="text-sm text-[#262626] mt-1"><span className="font-semibold mr-1.5">{post.profiles?.username}</span>{post.caption}</p>
+        )}
+        {post.music_tracks && (
+          <div className="flex items-center gap-1.5 text-xs ig-gray mt-2"><Music2 className="w-3.5 h-3.5" /> {post.music_tracks.title} · {post.music_tracks.artist}</div>
+        )}
+        <p className="text-[10px] ig-gray uppercase mt-2 tracking-wide">{new Date(post.created_at).toLocaleDateString()}</p>
+      </div>
+    </article>
   );
 }
 

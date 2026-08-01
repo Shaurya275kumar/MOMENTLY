@@ -11,11 +11,12 @@ import CreateScreen from './components/CreateScreen';
 import ChatScreen from './components/ChatScreen';
 import ProfileScreen from './components/ProfileScreen';
 import ExploreScreen from './components/ExploreScreen';
+import ActivityScreen from './components/ActivityScreen';
 import StoryViewer from './components/StoryViewer';
 import { DevGramWordmark } from './components/Logo';
-import { Loader2, Home, Clapperboard, PlusSquare, MessageCircle, User, LogOut, ArrowLeft, MessageSquare, Compass } from 'lucide-react';
+import { Loader2, Home, Clapperboard, PlusSquare, MessageCircle, User, LogOut, ArrowLeft, MessageSquare, Compass, Bell } from 'lucide-react';
 
-type Tab = 'home' | 'reels' | 'create' | 'chat' | 'profile' | 'explore';
+type Tab = 'home' | 'reels' | 'create' | 'chat' | 'profile' | 'explore' | 'activity';
 
 export default function App() {
   const { user, loading, signOut } = useAuth();
@@ -47,6 +48,7 @@ export default function App() {
           <nav className="flex items-center gap-5">
             <NavBtn icon={Home} active={tab === 'home'} onClick={() => { setTab('home'); setProfileId(null); }} />
             <NavBtn icon={Compass} active={tab === 'explore'} onClick={() => { setTab('explore'); setProfileId(null); }} />
+            <NavBtn icon={Bell} active={tab === 'activity'} onClick={() => { setTab('activity'); setProfileId(null); }} />
             <NavBtn icon={Clapperboard} active={tab === 'reels'} onClick={() => { setTab('reels'); setProfileId(null); }} />
             <NavBtn icon={PlusSquare} active={tab === 'create'} onClick={() => setTab('create')} />
             <NavBtn icon={MessageCircle} active={tab === 'chat'} onClick={() => { setTab('chat'); setChatWith(null); }} />
@@ -68,6 +70,7 @@ export default function App() {
       <main className={tab === 'reels' ? '' : 'max-w-[935px] mx-auto'}>
         {tab === 'home' && <FeedScreen onOpenProfile={openProfile} />}
         {tab === 'explore' && <ExploreScreen onOpenProfile={openProfile} />}
+        {tab === 'activity' && <ActivityScreen onOpenProfile={openProfile} />}
         {tab === 'reels' && <ReelsScreen onOpenProfile={openProfile} />}
         {tab === 'create' && <CreateScreen onDone={() => setTab('home')} />}
         {tab === 'chat' && <ChatScreen initialUserId={chatWith} onOpenProfile={openProfile} />}
@@ -84,6 +87,7 @@ export default function App() {
       <nav className="md:hidden fixed bottom-0 inset-x-0 h-14 bg-white border-t border-[#dbdbdb] flex items-center justify-around z-30">
         <NavBtn icon={Home} active={tab === 'home'} onClick={() => { setTab('home'); setProfileId(null); }} />
         <NavBtn icon={Compass} active={tab === 'explore'} onClick={() => { setTab('explore'); setProfileId(null); }} />
+        <NavBtn icon={Bell} active={tab === 'activity'} onClick={() => { setTab('activity'); setProfileId(null); }} />
         <NavBtn icon={Clapperboard} active={tab === 'reels'} onClick={() => { setTab('reels'); setProfileId(null); }} />
         <NavBtn icon={PlusSquare} active={tab === 'create'} onClick={() => setTab('create')} />
         <NavBtn icon={MessageCircle} active={tab === 'chat'} onClick={() => { setTab('chat'); setChatWith(null); }} />

@@ -1,30 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../lib/auth';
 import { getProfile, updateProfile, uploadAvatar } from '../lib/profile';
-import { fetchUserPosts, deletePost } from '../lib/posts';
+import { fetchUserPosts, fetchSavedPosts, deletePost } from '../lib/posts';
 import type { Profile, Post } from '../lib/supabase';
-import { Camera, Check, Loader2, Trash2 } from 'lucide-react';
+import { Camera, Check, Loader2, Trash2, Grid3x3, Bookmark } from 'lucide-react';
 
 export default function ProfileScreen({ onBack }: { onBack: () => void }) {
   const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [savedPosts, setSavedPosts] = useState<Post[]>([]);
+  const [tab, setTab] = useState<'posts' | 'saved'>('posts');
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<Post | null>(null);
   const [deleting, setDeleting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const loadPosts = async () => {
-    if (!user) return;
-    setPosts(await fetchUserPosts(user.id, user.id));
-  };
-
   useEffect(() => {
     (async () => {
       if (!user) { setLoading(false); return; }
       setProfile(await getProfile(user.id));
-      await loadPosts();
+      setPosts(await fetchUserPosts(user.id, user.id));
+      setSavedPosts(await fetchSavedPosts(user.id));
       setLoading(false);
     })();
   }, [user]);
@@ -89,28 +87,66 @@ export default function ProfileScreen({ onBack }: { onBack: () => void }) {
       </div>
       {editing && <EditForm profile={profile} onSaved={setProfile} />}
 
-      <div className="border-t border-[#dbdbdb] pt-4">
-        {posts.length === 0 ? (
-          <p className="text-center ig-gray py-16 text-sm">No posts yet.</p>
-        ) : (
-          <div className="grid grid-cols-3 gap-1">
-            {posts.map((post) => (
-              <div key={post.id} className="relative aspect-square bg-[#fafafa] overflow-hidden group">
-                {post.media_type === 'reel' ? (
-                  <video src={post.media_url} poster={post.thumbnail_url || undefined} className="w-full h-full object-cover" muted />
-                ) : (
-                  <img src={post.media_url} className="w-full h-full object-cover" alt={post.caption || ''} />
-                )}
-                <button
-                  onClick={() => setDeleteTarget(post)}
-                  className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
-                  aria-label="Delete post"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-          </div>
+      <div className="border-t border-[#dbdbdb]">
+        <div className="flex justify-center gap-12 mb-2">
+          <button
+            onClick={() => setTab('posts')}
+            className={`flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide py-3 ${tab === 'posts' ? 'text-[#262626] border-t border-[#262626] -mt-px' : 'ig-gray'}`}
+          >
+            <Grid3x3 className="w-4 h-4" /> Posts
+          </button>
+          <button
+            onClick={() => setTab('saved')}
+            className={`flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide py-3 ${tab === 'saved' ? 'text-[#262626] border-t border-[#262626] -mt-px' : 'ig-gray'}`}
+          >
+            <Bookmark className="w-4 h-4" /> Saved
+          </button>
+        </div>
+
+        {tab === 'posts' && (
+          posts.length === 0 ? (
+            <p className="text-center ig-gray py-16 text-sm">No posts yet.</p>
+          ) : (
+            <div className="grid grid-cols-3 gap-1">
+              {posts.map((post) => (
+                <div key={post.id} className="relative aspect-square bg-[#fafafa] overflow-hidden group">
+                  {post.media_type === 'reel' ? (
+                    <video src={post.media_url} poster={post.thumbnail_url || undefined} className="w-full h-full object-cover" muted />
+                  ) : (
+                    <img src={post.media_url} className="w-full h-full object-cover" alt={post.caption || ''} />
+                  )}
+                  <button
+                    onClick={() => setDeleteTarget(post)}
+                    className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                    aria-label="Delete post"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {tab === 'saved' && (
+          savedPosts.length === 0 ? (
+            <div className="text-center py-16">
+              <Bookmark className="w-12 h-12 mx-auto mb-3 text-[#dbdbdb]" strokeWidth={1} />
+              <p className="text-sm ig-gray">No saved posts yet. Tap the bookmark icon on any post to save it here.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-1">
+              {savedPosts.map((post) => (
+                <div key={post.id} className="relative aspect-square bg-[#fafafa] overflow-hidden">
+                  {post.media_type === 'reel' ? (
+                    <video src={post.media_url} poster={post.thumbnail_url || undefined} className="w-full h-full object-cover" muted />
+                  ) : (
+                    <img src={post.media_url} className="w-full h-full object-cover" alt={post.caption || ''} />
+                  )}
+                </div>
+              ))}
+            </div>
+          )
         )}
       </div>
 
