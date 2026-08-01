@@ -61,6 +61,11 @@ async function withCounts(posts: Post[] | null, userId: string): Promise<Post[]>
   }));
 }
 
+export async function deletePost(postId: string): Promise<void> {
+  const { error } = await supabase.from('posts').delete().eq('id', postId);
+  if (error) throw error;
+}
+
 export async function toggleLikeDb(post: Post, userId: string): Promise<void> {
   if (post.liked_by_me) {
     await supabase.from('likes').delete().eq('post_id', post.id).eq('user_id', userId);
