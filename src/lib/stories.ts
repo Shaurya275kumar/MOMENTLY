@@ -61,6 +61,37 @@ export async function fetchStoryGroups(currentUserId: string): Promise<StoryGrou
   });
 }
 
+export async function fetchUserStoryGroups(currentUserId: string, profileId: string): Promise<StoryGroup[]> {
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { data } = await supabase
+    .from('stories')
+    .select('id, user_id, media_url, media_type, created_at')
+    .eq('user_id', profileId)
+    .gt('created_at', cutoff)
+    .order('created_at', { ascending: true });
+
+  if (!data || data.length === 0) return [];
+  const stories = data as Story[];
+
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', profileId)
+    .maybeSingle();
+  if (!profiles) return [];
+  const profile = profiles as Profile;
+
+  const { data: myViews } = await supabase
+    .from('story_views')
+    .select('story_id')
+    .eq('viewer_id', currentUserId)
+    .in('story_id', stories.map((s) => s.id));
+  const viewedSet = new Set<string>((myViews || []).map((v: any) => v.story_id));
+
+  const viewed = stories.every((s) => viewedSet.has(s.id));
+  return [{ profile, stories, viewed }];
+}
+
 export async function createStory(userId: string, mediaUrl: string, mediaType: 'image' | 'video'): Promise<void> {
   const { error } = await supabase.from('stories').insert({
     user_id: userId,
