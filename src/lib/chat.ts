@@ -9,13 +9,18 @@ export type ConversationRow = {
   unread: number;
 };
 
+export type MediaType = 'image' | 'video' | 'file' | 'audio';
+
 export type MessageRow = {
   id: string;
   conversation_id: string;
   sender_id: string;
-  body: string;
+  body: string | null;
   created_at: string;
   read_at: string | null;
+  media_url: string | null;
+  media_type: MediaType | null;
+  media_name: string | null;
 };
 
 export async function fetchDmPartner(conversationId: string): Promise<Profile | null> {
@@ -32,57 +37,28 @@ export async function getOrCreateDm(otherUserId: string): Promise<string> {
   return data as string;
 }
 
-export async function fetchConversations(meId: string): Promise<ConversationRow[]> {
-  const { data: memberships } = await supabase
-    .from('conversation_members')
-    .select('conversation_id, last_read_at')
-    .eq('user_id', meId);
-  if (!memberships || memberships.length === 0) return [];
-
-  const convIds = memberships.map((m) => m.conversation_id);
-  const readMap = new Map(memberships.map((m) => [m.conversation_id, m.last_read_at]));
-
-  const [{ data: allMembers }, { data: lastMsgs }] = await Promise.all([
-    supabase.from('conversation_members').select('conversation_id, user_id, profiles!conversation_members_user_id_fkey(*)').in('conversation_id', convIds),
-    supabase.from('messages').select('conversation_id, body, created_at').in('conversation_id', convIds).order('created_at', { ascending: false }),
-  ]);
-
-  const lastByConv = new Map<string, { body: string; created_at: string }>();
-  (lastMsgs || []).forEach((m: any) => {
-    if (!lastByConv.has(m.conversation_id)) lastByConv.set(m.conversation_id, { body: m.body, created_at: m.created_at });
-  });
-
-  const byConv = new Map<string, any[]>();
-  (allMembers || []).forEach((m: any) => {
-    if (!byConv.has(m.conversation_id)) byConv.set(m.conversation_id, []);
-    byConv.get(m.conversation_id)!.push(m);
-  });
-
-  const rows: ConversationRow[] = [];
-  convIds.forEach((cid) => {
-    const members = byConv.get(cid) || [];
-    const other = members.find((m) => m.user_id !== meId);
-    if (!other) return;
-    const last = lastByConv.get(cid);
-    const readAt = readMap.get(cid);
-    const unread = (lastMsgs || []).filter((m: any) => m.conversation_id === cid && new Date(m.created_at) > new Date(readAt || 0) && (last as any)?.created_at === m.created_at ? true : false).length;
-    rows.push({
-      id: cid,
-      other: other.profiles as Profile,
-      last_message: last?.body ?? null,
-      last_at: last?.created_at ?? null,
-      unread,
-    });
-  });
-
-  rows.sort((a, b) => (b.last_at || '').localeCompare(a.last_at || ''));
-  return rows;
+export async function fetchConversations(_meId: string): Promise<ConversationRow[]> {
+  const { data, error } = await supabase.rpc('get_my_conversations');
+  if (error || !data) return [];
+  return (data as any[]).map((r) => ({
+    id: r.id,
+    other: {
+      id: r.partner_id,
+      username: r.partner_username,
+      full_name: r.partner_full_name,
+      avatar_url: r.partner_avatar_url,
+      bio: '',
+    } as Profile,
+    last_message: r.last_message ?? (r.last_at ? 'Media' : null),
+    last_at: r.last_at,
+    unread: Number(r.unread) || 0,
+  }));
 }
 
 export async function fetchMessages(conversationId: string): Promise<MessageRow[]> {
   const { data } = await supabase
     .from('messages')
-    .select('id, conversation_id, sender_id, body, created_at, read_at')
+    .select('id, conversation_id, sender_id, body, created_at, read_at, media_url, media_type, media_name')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true })
     .limit(500);

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from '../lib/auth';
+import { uploadFile } from '../lib/upload';
 import { supabase, type Profile } from '../lib/supabase';
 import {
   fetchConversations,
@@ -15,8 +16,9 @@ import {
   sendStopTyping,
   type ConversationRow,
   type MessageRow,
+  type MediaType,
 } from '../lib/chat';
-import { ArrowLeft, Send, Search, MessageCircle, Check, CheckCheck, Phone, Video } from 'lucide-react';
+import { ArrowLeft, Send, Search, MessageCircle, Check, CheckCheck, Phone, Video, Paperclip, ImageIcon, FileText } from 'lucide-react';
 
 export default function ChatScreen({ initialUserId, onOpenProfile }: { initialUserId?: string | null; onOpenProfile?: (id: string) => void }) {
   const { user } = useAuth();
@@ -142,6 +144,9 @@ function Thread({ conversationId, onBack, onOpenProfile }: { conversationId: str
   const [otherTyping, setOtherTyping] = useState(false);
   const [otherOnline, setOtherOnline] = useState(false);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const imageRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const presenceRef = useRef<ReturnType<typeof setupPresenceChannel> | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -216,8 +221,12 @@ function Thread({ conversationId, onBack, onOpenProfile }: { conversationId: str
 
   const submit = async () => {
     if (!body.trim() || busy || !user) return;
+    await sendTextMessage(body.trim());
+  };
+
+  const sendTextMessage = async (text: string) => {
+    if (!user) return;
     setBusy(true);
-    const text = body.trim();
     setBody('');
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     isTypingRef.current = false;
@@ -231,6 +240,9 @@ function Thread({ conversationId, onBack, onOpenProfile }: { conversationId: str
       body: text,
       created_at: new Date().toISOString(),
       read_at: null,
+      media_url: null,
+      media_type: null,
+      media_name: null,
     };
     setMessages((prev) => [...prev, optimistic]);
 
@@ -238,19 +250,67 @@ function Thread({ conversationId, onBack, onOpenProfile }: { conversationId: str
       const { data, error } = await supabase
         .from('messages')
         .insert({ conversation_id: conversationId, body: text })
-        .select('id, conversation_id, sender_id, body, created_at, read_at')
+        .select('id, conversation_id, sender_id, body, created_at, read_at, media_url, media_type, media_name')
         .single();
       if (error) throw error;
       if (data) {
         setMessages((prev) => prev.map((m) => m.id === tempId ? data : m));
       }
-    } catch (e: any) {
+    } catch {
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setBody(text);
-      setBusy(false);
-      return;
     }
     setBusy(false);
+  };
+
+  const detectMediaType = (file: File): MediaType => {
+    if (file.type.startsWith('image/')) return 'image';
+    if (file.type.startsWith('video/')) return 'video';
+    if (file.type.startsWith('audio/')) return 'audio';
+    return 'file';
+  };
+
+  const sendFile = async (file: File) => {
+    if (!user) return;
+    setUploading(true);
+    const mediaType = detectMediaType(file);
+    const tempId = `temp-${Date.now()}`;
+    const optimistic: MessageRow = {
+      id: tempId,
+      conversation_id: conversationId,
+      sender_id: user.id,
+      body: null,
+      created_at: new Date().toISOString(),
+      read_at: null,
+      media_url: URL.createObjectURL(file),
+      media_type: mediaType,
+      media_name: file.name,
+    };
+    setMessages((prev) => [...prev, optimistic]);
+
+    try {
+      const url = await uploadFile('chat-attachments', file, user.id);
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({ conversation_id: conversationId, body: null, media_url: url, media_type: mediaType, media_name: file.name })
+        .select('id, conversation_id, sender_id, body, created_at, read_at, media_url, media_type, media_name')
+        .single();
+      if (error) throw error;
+      if (data) {
+        setMessages((prev) => prev.map((m) => m.id === tempId ? data : m));
+      }
+    } catch {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+    }
+    setUploading(false);
+  };
+
+  const onFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      sendFile(files[0]);
+    }
+    e.target.value = '';
   };
 
   const statusText = otherTyping ? 'typing…' : otherOnline ? 'online' : lastSeen ? `last seen ${lastSeen}` : 'offline';
@@ -284,15 +344,42 @@ function Thread({ conversationId, onBack, onOpenProfile }: { conversationId: str
           const mine = m.sender_id === user?.id;
           const isLastInGroup = i === messages.length - 1 || messages[i + 1]?.sender_id !== m.sender_id;
           const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          const hasMedia = !!m.media_url;
+          const hasText = !!m.body;
           return (
             <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'} ${isLastInGroup ? 'mb-2' : ''}`}>
-              <div className={`max-w-[75%] px-3 py-2 text-sm shadow-sm relative ${
-                mine
-                  ? 'bg-[#d9fdd3] text-[#111b21] rounded-2xl rounded-br-sm'
-                  : 'bg-white text-[#111b21] rounded-2xl rounded-bl-sm'
+              <div className={`max-w-[75%] text-sm shadow-sm relative ${
+                hasMedia
+                  ? mine
+                    ? 'bg-[#d9fdd3] rounded-2xl rounded-br-sm overflow-hidden'
+                    : 'bg-white rounded-2xl rounded-bl-sm overflow-hidden'
+                  : mine
+                    ? 'bg-[#d9fdd3] text-[#111b21] rounded-2xl rounded-br-sm px-3 py-2'
+                    : 'bg-white text-[#111b21] rounded-2xl rounded-bl-sm px-3 py-2'
               }`}>
-                <p className="whitespace-pre-wrap break-words pr-12">{m.body}</p>
-                <span className="absolute bottom-1 right-2 flex items-center gap-0.5 text-[10px] text-[#667781]">
+                {hasMedia && m.media_type === 'image' && (
+                  <a href={m.media_url ?? undefined} target="_blank" rel="noopener noreferrer">
+                    <img src={m.media_url ?? undefined} alt={m.media_name || 'photo'} className="w-full max-w-[280px] h-auto object-cover" />
+                  </a>
+                )}
+                {hasMedia && m.media_type === 'video' && (
+                  <video src={m.media_url ?? undefined} controls className="w-full max-w-[280px] h-auto" />
+                )}
+                {hasMedia && m.media_type === 'audio' && (
+                  <div className="p-3">
+                    <audio src={m.media_url ?? undefined} controls className="w-full max-w-[280px]" />
+                  </div>
+                )}
+                {hasMedia && m.media_type === 'file' && (
+                  <a href={m.media_url ?? undefined} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 min-w-[200px]">
+                    <FileText className="w-8 h-8 text-[#0095f6] flex-shrink-0" />
+                    <span className="text-xs text-[#262626] truncate">{m.media_name || 'file'}</span>
+                  </a>
+                )}
+                {hasText && (
+                  <p className={`whitespace-pre-wrap break-words ${hasMedia ? 'px-3 pt-1 pb-2' : 'pr-12'} ${hasMedia ? '' : ''}`}>{m.body}</p>
+                )}
+                <span className={`flex items-center gap-0.5 text-[10px] text-[#667781] ${hasMedia ? 'absolute bottom-1.5 right-2 bg-white/70 px-1 rounded' : 'absolute bottom-1 right-2'}`}>
                   {time}
                   {mine && isLastInGroup && (
                     m.read_at ? <CheckCheck className="w-3.5 h-3.5 text-[#53bdeb]" /> : <Check className="w-3.5 h-3.5 text-[#667781]" />
@@ -317,16 +404,35 @@ function Thread({ conversationId, onBack, onOpenProfile }: { conversationId: str
 
       {/* Composer */}
       <div className="px-3 py-2.5 border-t border-[#dbdbdb] flex items-center gap-2 bg-white">
+        <input ref={fileRef} type="file" onChange={onFilePick} className="hidden" accept="video/*,audio/*,application/pdf,text/*,.*" />
+        <input ref={imageRef} type="file" onChange={onFilePick} className="hidden" accept="image/*" />
+        <button
+          onClick={() => fileRef.current?.click()}
+          disabled={uploading}
+          className="w-9 h-9 rounded-full hover:bg-[#f2f2f2] flex items-center justify-center text-[#262626] flex-shrink-0 transition disabled:opacity-40"
+          aria-label="Attach file"
+        >
+          <Paperclip className="w-5 h-5" />
+        </button>
+        <button
+          onClick={() => imageRef.current?.click()}
+          disabled={uploading}
+          className="w-9 h-9 rounded-full hover:bg-[#f2f2f2] flex items-center justify-center text-[#262626] flex-shrink-0 transition disabled:opacity-40"
+          aria-label="Attach photo"
+        >
+          <ImageIcon className="w-5 h-5" />
+        </button>
         <input
           value={body}
           onChange={(e) => { setBody(e.target.value); handleTyping(); }}
           onKeyDown={(e) => e.key === 'Enter' && submit()}
-          placeholder="Message…"
+          placeholder={uploading ? 'Uploading…' : 'Message…'}
+          disabled={uploading}
           className="flex-1 ig-input py-2.5 text-sm rounded-full"
         />
         <button
           onClick={submit}
-          disabled={!body.trim() || busy}
+          disabled={(!body.trim() && !uploading) || busy || uploading}
           className="w-10 h-10 rounded-full bg-[#0095f6] hover:bg-[#1877f2] disabled:opacity-40 flex items-center justify-center text-white transition flex-shrink-0"
           aria-label="Send"
         >
