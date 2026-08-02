@@ -3,6 +3,7 @@ import { supabase, type Post, type Profile } from '../lib/supabase';
 import { fetchFeedPosts, toggleLikeDb, toggleSaveDb } from '../lib/posts';
 import { useAuth } from '../lib/auth';
 import CommentsDrawer from './CommentsDrawer';
+import ShareModal from './ShareModal';
 import StoriesBar from './StoriesBar';
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Music2 } from 'lucide-react';
 
@@ -11,6 +12,7 @@ export default function FeedScreen({ onOpenProfile }: { onOpenProfile: (id: stri
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [commentsFor, setCommentsFor] = useState<string | null>(null);
+  const [sharePost, setSharePost] = useState<Post | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -41,7 +43,7 @@ export default function FeedScreen({ onOpenProfile }: { onOpenProfile: (id: stri
         {posts.length === 0 && <p className="text-center ig-gray mt-20">No posts yet. Create one with the + button!</p>}
         <div className="space-y-6">
           {posts.map((post) => (
-            <FeedPost key={post.id} post={post} onLike={toggleLike} onSave={toggleSave} onComments={setCommentsFor} onOpenProfile={onOpenProfile} />
+            <FeedPost key={post.id} post={post} onLike={toggleLike} onSave={toggleSave} onComments={setCommentsFor} onShare={setSharePost} onOpenProfile={onOpenProfile} />
           ))}
         </div>
       </div>
@@ -50,11 +52,12 @@ export default function FeedScreen({ onOpenProfile }: { onOpenProfile: (id: stri
         <SuggestionsRail onOpenProfile={onOpenProfile} />
       </div>
       {commentsFor && <CommentsDrawer postId={commentsFor} onClose={() => setCommentsFor(null)} />}
+      {sharePost && <ShareModal url={sharePost.media_url} onClose={() => setSharePost(null)} />}
     </div>
   );
 }
 
-function FeedPost({ post, onLike, onSave, onComments, onOpenProfile }: { post: Post; onLike: (p: Post) => void; onSave: (p: Post) => void; onComments: (id: string) => void; onOpenProfile: (id: string) => void }) {
+function FeedPost({ post, onLike, onSave, onComments, onShare, onOpenProfile }: { post: Post; onLike: (p: Post) => void; onSave: (p: Post) => void; onComments: (id: string) => void; onShare: (p: Post) => void; onOpenProfile: (id: string) => void }) {
   const [burst, setBurst] = useState(false);
   const lastTapRef = useRef<number>(0);
 
@@ -98,7 +101,7 @@ function FeedPost({ post, onLike, onSave, onComments, onOpenProfile }: { post: P
         <div className="flex items-center gap-4 py-2">
           <button onClick={() => onLike(post)} className="active:scale-90 transition"><Heart className={`w-6 h-6 ${post.liked_by_me ? 'fill-[#ed4956] text-[#ed4956]' : 'text-[#262626]'}`} /></button>
           <button onClick={() => onComments(post.id)} className="active:scale-90 transition"><MessageCircle className="w-6 h-6 text-[#262626]" /></button>
-          <Send className="w-6 h-6 text-[#262626]" />
+          <button onClick={() => onShare(post)} className="active:scale-90 transition"><Send className="w-6 h-6 text-[#262626]" /></button>
           <button onClick={() => onSave(post)} className="ml-auto active:scale-90 transition"><Bookmark className={`w-6 h-6 ${post.saved_by_me ? 'fill-[#262626] text-[#262626]' : 'text-[#262626]'}`} /></button>
         </div>
         <p className="text-sm font-semibold text-[#262626]">{post.like_count || 0} likes</p>

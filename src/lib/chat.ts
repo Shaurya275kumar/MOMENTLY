@@ -108,7 +108,7 @@ export async function markMessagesRead(conversationId: string): Promise<void> {
 export function subscribeMessages(conversationId: string, cb: () => void) {
   return supabase
     .channel(`messages:${conversationId}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` }, cb)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` }, cb)
     .subscribe();
 }
 

@@ -3,6 +3,7 @@ import type { Post } from '../lib/supabase';
 import { fetchReelPosts, toggleLikeDb } from '../lib/posts';
 import { useAuth } from '../lib/auth';
 import CommentsDrawer from './CommentsDrawer';
+import ShareModal from './ShareModal';
 import { Heart, MessageCircle, Send, MoreHorizontal, Music2, Play, Volume2, VolumeX, ChevronUp } from 'lucide-react';
 
 export default function ReelsScreen({ onOpenProfile }: { onOpenProfile: (id: string) => void }) {
@@ -10,6 +11,7 @@ export default function ReelsScreen({ onOpenProfile }: { onOpenProfile: (id: str
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [commentsOpen, setCommentsOpen] = useState<string | null>(null);
+  const [sharePost, setSharePost] = useState<Post | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
 
@@ -56,7 +58,7 @@ export default function ReelsScreen({ onOpenProfile }: { onOpenProfile: (id: str
       <div ref={containerRef} className="h-[calc(100vh-3.5rem)] md:h-screen overflow-y-scroll snap-y snap-mandatory bg-black scroll-smooth">
         {posts.map((post, i) => (
           <div key={post.id} data-reel data-idx={i} className="h-full w-full snap-start snap-always relative flex items-center justify-center">
-            <ReelPlayer post={post} active={i === activeIdx} onLike={() => toggleLike(post)} onComments={() => setCommentsOpen(post.id)} onOpenProfile={onOpenProfile} />
+            <ReelPlayer post={post} active={i === activeIdx} onLike={() => toggleLike(post)} onComments={() => setCommentsOpen(post.id)} onShare={() => setSharePost(post)} onOpenProfile={onOpenProfile} />
             {i < posts.length - 1 && (
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 text-white/70 animate-bounce">
                 <ChevronUp className="w-6 h-6" />
@@ -66,11 +68,12 @@ export default function ReelsScreen({ onOpenProfile }: { onOpenProfile: (id: str
         ))}
       </div>
       {commentsOpen && <CommentsDrawer postId={commentsOpen} onClose={() => setCommentsOpen(null)} />}
+      {sharePost && <ShareModal url={sharePost.media_url} onClose={() => setSharePost(null)} />}
     </>
   );
 }
 
-function ReelPlayer({ post, active, onLike, onComments, onOpenProfile }: { post: Post; active: boolean; onLike: () => void; onComments: () => void; onOpenProfile: (id: string) => void }) {
+function ReelPlayer({ post, active, onLike, onComments, onShare, onOpenProfile }: { post: Post; active: boolean; onLike: () => void; onComments: () => void; onShare: () => void; onOpenProfile: (id: string) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(true);
@@ -119,14 +122,14 @@ function ReelPlayer({ post, active, onLike, onComments, onOpenProfile }: { post:
 
         {/* Action rail */}
         <div className="absolute right-3 bottom-4 flex flex-col items-center gap-5 text-white z-10">
-          <ReelActions post={post} onLike={onLike} onComments={onComments} />
+          <ReelActions post={post} onLike={onLike} onComments={onComments} onShare={onShare} />
         </div>
       </div>
     </div>
   );
 }
 
-function ReelActions({ post, onLike, onComments }: { post: Post; onLike: () => void; onComments: () => void }) {
+function ReelActions({ post, onLike, onComments, onShare }: { post: Post; onLike: () => void; onComments: () => void; onShare: () => void }) {
   return (
     <>
       <button onClick={onLike} className="flex flex-col items-center gap-1 active:scale-90 transition">
@@ -137,7 +140,7 @@ function ReelActions({ post, onLike, onComments }: { post: Post; onLike: () => v
         <MessageCircle className="w-7 h-7 text-white" />
         <span className="text-xs font-medium text-white">{post.comment_count || 0}</span>
       </button>
-      <button className="flex flex-col items-center gap-1 active:scale-90 transition">
+      <button onClick={onShare} className="flex flex-col items-center gap-1 active:scale-90 transition">
         <Send className="w-7 h-7 text-white" />
       </button>
       <button className="active:scale-90 transition"><MoreHorizontal className="w-7 h-7 text-white" /></button>

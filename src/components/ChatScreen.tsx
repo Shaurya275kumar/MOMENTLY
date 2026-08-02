@@ -4,7 +4,6 @@ import { supabase, type Profile } from '../lib/supabase';
 import {
   fetchConversations,
   fetchMessages,
-  sendMessage,
   markRead,
   markMessagesRead,
   subscribeMessages,
@@ -161,21 +160,21 @@ function Thread({ conversationId, onBack, onOpenProfile }: { conversationId: str
     })();
   }, [conversationId, user]);
 
-  // Load messages + mark read
+  // Load messages + mark read (only once on open, not on every refresh)
   const refresh = useCallback(async () => {
     const msgs = await fetchMessages(conversationId);
     setMessages(msgs);
-    if (user) {
-      await markMessagesRead(conversationId);
-      await markRead(conversationId);
-    }
-  }, [conversationId, user]);
+  }, [conversationId]);
 
   useEffect(() => {
     refresh();
+    if (user) {
+      markMessagesRead(conversationId);
+      markRead(conversationId);
+    }
     const sub = subscribeMessages(conversationId, () => refresh());
     return () => { supabase.removeChannel(sub); };
-  }, [refresh, conversationId]);
+  }, [refresh, conversationId, user]);
 
   // Presence + typing
   useEffect(() => {
@@ -221,14 +220,42 @@ function Thread({ conversationId, onBack, onOpenProfile }: { conversationId: str
   };
 
   const submit = async () => {
-    if (!body.trim() || busy) return;
+    if (!body.trim() || busy || !user) return;
     setBusy(true);
     const text = body.trim();
     setBody('');
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     isTypingRef.current = false;
-    if (user && presenceRef.current) sendStopTyping(presenceRef.current, user.id);
-    try { await sendMessage(conversationId, text); } finally { setBusy(false); }
+    if (presenceRef.current) sendStopTyping(presenceRef.current, user.id);
+
+    const tempId = `temp-${Date.now()}`;
+    const optimistic: MessageRow = {
+      id: tempId,
+      conversation_id: conversationId,
+      sender_id: user.id,
+      body: text,
+      created_at: new Date().toISOString(),
+      read_at: null,
+    };
+    setMessages((prev) => [...prev, optimistic]);
+
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({ conversation_id: conversationId, body: text })
+        .select('id, conversation_id, sender_id, body, created_at, read_at')
+        .single();
+      if (error) throw error;
+      if (data) {
+        setMessages((prev) => prev.map((m) => m.id === tempId ? data : m));
+      }
+    } catch (e: any) {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      setBody(text);
+      setBusy(false);
+      return;
+    }
+    setBusy(false);
   };
 
   const statusText = otherTyping ? 'typing…' : otherOnline ? 'online' : lastSeen ? `last seen ${lastSeen}` : 'offline';
