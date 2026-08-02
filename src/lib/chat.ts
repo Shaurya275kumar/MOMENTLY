@@ -18,6 +18,14 @@ export type MessageRow = {
   read_at: string | null;
 };
 
+export async function fetchDmPartner(conversationId: string): Promise<Profile | null> {
+  const { data, error } = await supabase.rpc('get_dm_partner', { p_conversation: conversationId });
+  if (error) return null;
+  const row = (data as any[])?.[0];
+  if (!row) return null;
+  return { id: row.id, username: row.username, full_name: row.full_name, avatar_url: row.avatar_url, bio: row.bio } as Profile;
+}
+
 export async function getOrCreateDm(otherUserId: string): Promise<string> {
   const { data, error } = await supabase.rpc('get_or_create_dm', { p_other_user: otherUserId });
   if (error) throw error;

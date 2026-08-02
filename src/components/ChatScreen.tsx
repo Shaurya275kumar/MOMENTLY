@@ -4,6 +4,7 @@ import { supabase, type Profile } from '../lib/supabase';
 import {
   fetchConversations,
   fetchMessages,
+  fetchDmPartner,
   markRead,
   markMessagesRead,
   subscribeMessages,
@@ -148,17 +149,13 @@ function Thread({ conversationId, onBack, onOpenProfile }: { conversationId: str
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
 
-  // Resolve the "other" member
+  // Resolve the "other" member (via SECURITY DEFINER function — RLS blocks direct read)
   useEffect(() => {
     (async () => {
-      const { data: members } = await supabase
-        .from('conversation_members')
-        .select('user_id, profiles!conversation_members_user_id_fkey(*)')
-        .eq('conversation_id', conversationId);
-      const o = (members as any[])?.find((m) => m.user_id !== user?.id)?.profiles as Profile | undefined;
-      if (o) setOther(o);
+      const partner = await fetchDmPartner(conversationId);
+      if (partner) setOther(partner);
     })();
-  }, [conversationId, user]);
+  }, [conversationId]);
 
   // Load messages + mark read (only once on open, not on every refresh)
   const refresh = useCallback(async () => {
