@@ -138,24 +138,52 @@ export type PresenceState = {
   onlineAt: string;
 };
 
-/** Track the current user as online in a conversation presence channel. */
-export function trackPresence(conversationId: string, userId: string) {
+/**
+ * Create + subscribe a presence/typing channel for a conversation.
+ * All callbacks MUST be registered before .subscribe(), so this is done
+ * in one function rather than separate calls (adding callbacks after
+ * subscribe() throws in the Supabase realtime client).
+ */
+export function setupPresenceChannel(
+  conversationId: string,
+  userId: string,
+  otherId: string,
+  onSync: (onlineIds: Set<string>) => void,
+  onTypingCb: () => void,
+  onStopTypingCb: () => void,
+) {
   const channel = supabase.channel(`presence:${conversationId}`, {
     config: { presence: { key: userId } },
   });
+
+  let typingTimer: ReturnType<typeof setTimeout> | null = null;
+
   channel
-    .on('presence', { event: 'sync' }, () => {})
-    .on('presence', { event: 'join' }, () => {})
-    .on('presence', { event: 'leave' }, () => {})
+    .on('presence', { event: 'sync' }, () => onSync(getOnlineUserIds(channel)))
+    .on('broadcast', { event: 'typing' }, (msg) => {
+      if (msg.payload?.userId === otherId) {
+        onTypingCb();
+        if (typingTimer) clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => { onStopTypingCb(); typingTimer = null; }, 3500);
+      }
+    })
+    .on('broadcast', { event: 'stop_typing' }, (msg) => {
+      if (msg.payload?.userId === otherId) {
+        if (typingTimer) clearTimeout(typingTimer);
+        onStopTypingCb();
+        typingTimer = null;
+      }
+    })
     .subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
         await channel.track({ userId, onlineAt: new Date().toISOString() } satisfies PresenceState);
       }
     });
+
   return channel;
 }
 
-export function getOnlineUserIds(channel: ReturnType<typeof trackPresence>): Set<string> {
+export function getOnlineUserIds(channel: ReturnType<typeof setupPresenceChannel>): Set<string> {
   const state = channel.presenceState<{ userId: string; onlineAt: string }>();
   const ids = new Set<string>();
   Object.values(state).forEach((presences) => {
@@ -164,46 +192,10 @@ export function getOnlineUserIds(channel: ReturnType<typeof trackPresence>): Set
   return ids;
 }
 
-export function onPresenceChange(channel: ReturnType<typeof trackPresence>, cb: (onlineIds: Set<string>) => void) {
-  const handler = () => cb(getOnlineUserIds(channel));
-  channel.on('presence', { event: 'sync' }, handler);
-  return () => {};
-}
-
-/* ------------------------------------------------------------------ */
-/* Typing indicators — broadcast                                       */
-/* ------------------------------------------------------------------ */
-
-export function sendTyping(channel: ReturnType<typeof trackPresence>, userId: string) {
+export function sendTyping(channel: ReturnType<typeof setupPresenceChannel>, userId: string) {
   channel.send({ type: 'broadcast', event: 'typing', payload: { userId } });
 }
 
-export function sendStopTyping(channel: ReturnType<typeof trackPresence>, userId: string) {
+export function sendStopTyping(channel: ReturnType<typeof setupPresenceChannel>, userId: string) {
   channel.send({ type: 'broadcast', event: 'stop_typing', payload: { userId } });
-}
-
-export function onTyping(
-  channel: ReturnType<typeof trackPresence>,
-  otherId: string,
-  onTypingCb: () => void,
-  onStopCb: () => void,
-) {
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  channel.on('broadcast', { event: 'typing' }, (msg) => {
-    if (msg.payload?.userId === otherId) {
-      onTypingCb();
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => {
-        onStopCb();
-        timer = null;
-      }, 3500);
-    }
-  });
-  channel.on('broadcast', { event: 'stop_typing' }, (msg) => {
-    if (msg.payload?.userId === otherId) {
-      if (timer) clearTimeout(timer);
-      onStopCb();
-      timer = null;
-    }
-  });
 }

@@ -10,11 +10,9 @@ import {
   subscribeMessages,
   subscribeInbox,
   getOrCreateDm,
-  trackPresence,
-  onPresenceChange,
+  setupPresenceChannel,
   sendTyping,
   sendStopTyping,
-  onTyping,
   type ConversationRow,
   type MessageRow,
 } from '../lib/chat';
@@ -145,7 +143,7 @@ function Thread({ conversationId, onBack, onOpenProfile }: { conversationId: str
   const [otherOnline, setOtherOnline] = useState(false);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const presenceRef = useRef<ReturnType<typeof trackPresence> | null>(null);
+  const presenceRef = useRef<ReturnType<typeof setupPresenceChannel> | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
 
@@ -176,19 +174,19 @@ function Thread({ conversationId, onBack, onOpenProfile }: { conversationId: str
   // Presence + typing
   useEffect(() => {
     if (!user || !other) return;
-    const ch = trackPresence(conversationId, user.id);
+    const ch = setupPresenceChannel(
+      conversationId,
+      user.id,
+      other.id,
+      (onlineIds) => {
+        const online = onlineIds.has(other.id);
+        setOtherOnline(online);
+        if (!online) setLastSeen(null);
+      },
+      () => setOtherTyping(true),
+      () => setOtherTyping(false),
+    );
     presenceRef.current = ch;
-
-    onPresenceChange(ch, (onlineIds) => {
-      const online = onlineIds.has(other.id);
-      setOtherOnline(online);
-      if (!online) {
-        // Use last message time from the other user as a rough "last seen"
-        setLastSeen(null);
-      }
-    });
-
-    onTyping(ch, other.id, () => setOtherTyping(true), () => setOtherTyping(false));
 
     return () => {
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
