@@ -13,16 +13,26 @@ import ProfileScreen from './components/ProfileScreen';
 import ExploreScreen from './components/ExploreScreen';
 import ActivityScreen from './components/ActivityScreen';
 import StoryViewer from './components/StoryViewer';
-import { DevGramWordmark } from './components/Logo';
-import { Loader2, Home, Clapperboard, PlusSquare, MessageCircle, User, LogOut, ArrowLeft, MessageSquare, Compass, Bell } from 'lucide-react';
+import { DevGramWordmark, DevGramMark } from './components/Logo';
+import { Loader2, Home, Clapperboard, PlusSquare, MessageCircle, User, LogOut, ArrowLeft, MessageSquare, Compass, Bell, X } from 'lucide-react';
 
 type Tab = 'home' | 'reels' | 'create' | 'chat' | 'profile' | 'explore' | 'activity';
+
+const NAV_ITEMS = [
+  { id: 'home' as Tab, icon: Home, label: 'Home' },
+  { id: 'explore' as Tab, icon: Compass, label: 'Explore' },
+  { id: 'activity' as Tab, icon: Bell, label: 'Activity' },
+  { id: 'reels' as Tab, icon: Clapperboard, label: 'Reels' },
+  { id: 'create' as Tab, icon: PlusSquare, label: 'Create' },
+  { id: 'chat' as Tab, icon: MessageCircle, label: 'Messages' },
+];
 
 export default function App() {
   const { user, loading, signOut } = useAuth();
   const [tab, setTab] = useState<Tab>('home');
   const [profileId, setProfileId] = useState<string | null>(null);
   const [chatWith, setChatWith] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-[#0095f6]" /></div>;
   if (!user) return <AuthScreen />;
@@ -30,91 +40,123 @@ export default function App() {
   const openProfile = (id: string) => {
     setProfileId(id);
     setTab('profile');
+    setDrawerOpen(false);
   };
 
   const openChatWith = (id: string) => {
     setChatWith(id);
     setTab('chat');
+    setDrawerOpen(false);
+  };
+
+  const switchTab = (t: Tab) => {
+    setTab(t);
+    if (t !== 'profile') setProfileId(null);
+    if (t !== 'chat') setChatWith(null);
+    setDrawerOpen(false);
   };
 
   const isOwnProfile = profileId === null || profileId === user.id;
 
-  return (
-    <div className="min-h-screen bg-white">
-      {/* Top header */}
-      <header className="border-b border-[#dbdbdb] sticky top-0 bg-white z-20">
-        <div className="max-w-[935px] mx-auto px-4 h-14 flex items-center justify-between">
-          <DevGramWordmark />
+  const sidebarContent = (
+    <>
+      <div className="px-3 py-6 hidden md:flex justify-center xl:justify-start">
+        <DevGramWordmark />
+      </div>
 
-          {/* Desktop nav — all icons */}
-          <nav className="hidden md:flex items-center gap-5">
-            <NavBtn icon={Home} active={tab === 'home'} onClick={() => { setTab('home'); setProfileId(null); }} />
-            <NavBtn icon={Compass} active={tab === 'explore'} onClick={() => { setTab('explore'); setProfileId(null); }} />
-            <NavBtn icon={Bell} active={tab === 'activity'} onClick={() => { setTab('activity'); setProfileId(null); }} />
-            <NavBtn icon={Clapperboard} active={tab === 'reels'} onClick={() => { setTab('reels'); setProfileId(null); }} />
-            <NavBtn icon={PlusSquare} active={tab === 'create'} onClick={() => setTab('create')} />
-            <NavBtn icon={MessageCircle} active={tab === 'chat'} onClick={() => { setTab('chat'); setChatWith(null); }} />
-            <button
-              onClick={() => { setProfileId(null); setTab('profile'); }}
-              className={`p-1 rounded transition ${tab === 'profile' && isOwnProfile ? 'text-[#262626]' : 'text-[#8e8e8e] hover:text-[#262626]'}`}
-              aria-label="Profile"
-            >
-              <User className="w-6 h-6" />
-            </button>
-            <button onClick={signOut} className="text-[#8e8e8e] hover:text-[#262626] p-1" aria-label="Sign out">
-              <LogOut className="w-6 h-6" />
-            </button>
-          </nav>
-
-          {/* Mobile header — Activity + Chat shortcuts */}
-          <nav className="flex md:hidden items-center gap-4">
-            <NavBtn icon={Bell} active={tab === 'activity'} onClick={() => { setTab('activity'); setProfileId(null); }} />
-            <NavBtn icon={MessageCircle} active={tab === 'chat'} onClick={() => { setTab('chat'); setChatWith(null); }} />
-          </nav>
-        </div>
-      </header>
-
-      {/* Main content */}
-      <main className={tab === 'reels' ? '' : 'max-w-[935px] mx-auto'}>
-        {tab === 'home' && <FeedScreen onOpenProfile={openProfile} />}
-        {tab === 'explore' && <ExploreScreen onOpenProfile={openProfile} />}
-        {tab === 'activity' && <ActivityScreen onOpenProfile={openProfile} />}
-        {tab === 'reels' && <ReelsScreen onOpenProfile={openProfile} />}
-        {tab === 'create' && <CreateScreen onDone={() => setTab('home')} />}
-        {tab === 'chat' && <ChatScreen initialUserId={chatWith} onOpenProfile={openProfile} />}
-        {tab === 'profile' && (
-          isOwnProfile ? (
-            <ProfileScreen onBack={() => { setProfileId(null); setTab('home'); }} />
-          ) : (
-            <OtherProfile profileId={profileId!} onBack={() => { setProfileId(null); setTab('home'); }} onMessage={() => openChatWith(profileId!)} />
-          )
-        )}
-      </main>
-
-      {/* Mobile bottom nav — 5 primary tabs */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 h-14 bg-white border-t border-[#dbdbdb] flex items-center justify-around z-30">
-        <NavBtn icon={Home} active={tab === 'home'} onClick={() => { setTab('home'); setProfileId(null); }} />
-        <NavBtn icon={Compass} active={tab === 'explore'} onClick={() => { setTab('explore'); setProfileId(null); }} />
-        <NavBtn icon={PlusSquare} active={tab === 'create'} onClick={() => setTab('create')} />
-        <NavBtn icon={Clapperboard} active={tab === 'reels'} onClick={() => { setTab('reels'); setProfileId(null); }} />
-        <button
-          onClick={() => { setProfileId(null); setTab('profile'); }}
-          className={`p-1 rounded transition ${tab === 'profile' && isOwnProfile ? 'text-[#262626]' : 'text-[#8e8e8e]'}`}
-          aria-label="Profile"
-        >
-          <User className="w-6 h-6" />
-        </button>
+      <nav className="flex flex-col gap-1 px-3 flex-1">
+        {NAV_ITEMS.map(({ id, icon, label }) => (
+          <SidebarItem
+            key={id}
+            icon={icon}
+            label={label}
+            active={tab === id}
+            onClick={() => switchTab(id)}
+          />
+        ))}
+        <SidebarItem
+          icon={User}
+          label="Profile"
+          active={tab === 'profile' && isOwnProfile}
+          onClick={() => { setProfileId(null); switchTab('profile'); }}
+        />
       </nav>
 
-      {tab !== 'reels' && <div className="h-14 md:hidden" />}
+      <div className="px-3 pb-6">
+        <SidebarItem icon={LogOut} label="Log out" active={false} onClick={signOut} danger />
+      </div>
+    </>
+  );
+
+  return (
+    <div className="min-h-screen bg-white flex">
+      {/* Desktop sidebar — always visible on md+ */}
+      <aside className="hidden md:flex flex-col w-[72px] xl:w-[244px] border-r border-[#dbdbdb] fixed inset-y-0 left-0 bg-white z-20">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile slide-out drawer */}
+      {drawerOpen && (
+        <div className="md:hidden fixed inset-0 z-40">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setDrawerOpen(false)} />
+          <aside className="absolute left-0 inset-y-0 w-[260px] bg-white flex flex-col animate-[slideIn_0.2s_ease-out]">
+            <div className="flex items-center justify-between px-3 py-4 border-b border-[#dbdbdb]">
+              <DevGramWordmark />
+              <button onClick={() => setDrawerOpen(false)} className="p-1 text-[#8e8e8e] hover:text-[#262626]">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 flex flex-col">
+              {sidebarContent}
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* Main area */}
+      <div className="flex-1 md:ml-[72px] xl:ml-[244px] flex flex-col min-h-screen">
+        {/* Mobile top bar with menu button */}
+        <header className="md:hidden sticky top-0 bg-white z-10 border-b border-[#dbdbdb]">
+          <div className="h-14 px-4 flex items-center gap-3">
+            <button onClick={() => setDrawerOpen(true)} className="p-1 text-[#262626]" aria-label="Open menu">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <DevGramMark className="w-7 h-7" />
+            <DevGramWordmark />
+          </div>
+        </header>
+
+        {/* Content */}
+        <main className={`flex-1 ${tab === 'reels' ? '' : 'max-w-[935px] mx-auto w-full'}`}>
+          {tab === 'home' && <FeedScreen onOpenProfile={openProfile} />}
+          {tab === 'explore' && <ExploreScreen onOpenProfile={openProfile} />}
+          {tab === 'activity' && <ActivityScreen onOpenProfile={openProfile} />}
+          {tab === 'reels' && <ReelsScreen onOpenProfile={openProfile} />}
+          {tab === 'create' && <CreateScreen onDone={() => setTab('home')} />}
+          {tab === 'chat' && <ChatScreen initialUserId={chatWith} onOpenProfile={openProfile} />}
+          {tab === 'profile' && (
+            isOwnProfile ? (
+              <ProfileScreen onBack={() => { setProfileId(null); setTab('home'); }} />
+            ) : (
+              <OtherProfile profileId={profileId!} onBack={() => { setProfileId(null); setTab('home'); }} onMessage={() => openChatWith(profileId!)} />
+            )
+          )}
+        </main>
+      </div>
     </div>
   );
 }
 
-function NavBtn({ icon: Icon, active, onClick }: { icon: React.ComponentType<{ className?: string }>; active: boolean; onClick: () => void }) {
+function SidebarItem({ icon: Icon, label, active, onClick, danger }: { icon: React.ComponentType<{ className?: string }>; label: string; active: boolean; onClick: () => void; danger?: boolean }) {
   return (
-    <button onClick={onClick} className={`p-1 rounded transition ${active ? 'text-[#262626]' : 'text-[#8e8e8e] hover:text-[#262626]'}`}>
-      <Icon className="w-6 h-6" />
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-4 px-3 py-3 rounded-lg transition group ${danger ? 'text-[#ed4956] hover:bg-[#efefef]' : active ? 'text-[#262626] font-semibold bg-[#f2f2f2]' : 'text-[#262626] hover:bg-[#f2f2f2]'}`}
+    >
+      <Icon className={`w-6 h-6 flex-shrink-0 ${danger ? '' : active ? 'text-[#262626]' : 'text-[#262626] group-hover:text-[#262626]'}`} />
+      <span className="hidden xl:block text-base">{label}</span>
     </button>
   );
 }
