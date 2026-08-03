@@ -3,7 +3,7 @@ import { useAuth } from '../lib/auth';
 import { getProfile, updateProfile, uploadAvatar } from '../lib/profile';
 import { fetchUserPosts, fetchSavedPosts, deletePost } from '../lib/posts';
 import type { Profile, Post } from '../lib/supabase';
-import { Camera, Check, Loader2, Trash2, Grid3x3, Bookmark, LogOut } from 'lucide-react';
+import { Camera, Check, Loader2, Trash2, Grid3x3, Bookmark, LogOut, UserX } from 'lucide-react';
 
 export default function ProfileScreen({ onBack }: { onBack: () => void; onSignOut?: () => void }) {
   const { user, signOut } = useAuth();
@@ -39,6 +39,16 @@ export default function ProfileScreen({ onBack }: { onBack: () => void; onSignOu
     }
   };
 
+  const onRemoveAvatar = async () => {
+    if (!user || !profile?.avatar_url) return;
+    try {
+      await updateProfile(user.id, { avatar_url: null });
+      setProfile((p) => p ? { ...p, avatar_url: null } : p);
+    } catch (err) {
+      alert('Could not remove photo: ' + (err as Error).message);
+    }
+  };
+
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -63,9 +73,16 @@ export default function ProfileScreen({ onBack }: { onBack: () => void; onSignOu
         <div className="relative shrink-0">
           <img src={profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username)}&background=random`} className="w-24 h-24 rounded-full object-cover" alt="" />
           {editing && (
-            <button onClick={() => fileRef.current?.click()} className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-[#0095f6] text-white flex items-center justify-center ring-2 ring-white">
-              <Camera className="w-4 h-4" />
-            </button>
+            <>
+              <button onClick={() => fileRef.current?.click()} className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-[#0095f6] text-white flex items-center justify-center ring-2 ring-white" aria-label="Change photo">
+                <Camera className="w-4 h-4" />
+              </button>
+              {profile.avatar_url && (
+                <button onClick={onRemoveAvatar} className="absolute top-0 right-0 w-8 h-8 rounded-full bg-[#ed4956] text-white flex items-center justify-center ring-2 ring-white" aria-label="Remove photo">
+                  <UserX className="w-4 h-4" />
+                </button>
+              )}
+            </>
           )}
           <input ref={fileRef} type="file" accept="image/*" onChange={onPickAvatar} className="hidden" />
         </div>
