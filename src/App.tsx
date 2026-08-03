@@ -45,7 +45,9 @@ export default function App() {
       <header className="border-b border-[#dbdbdb] sticky top-0 bg-white z-20">
         <div className="max-w-[935px] mx-auto px-4 h-14 flex items-center justify-between">
           <DevGramWordmark />
-          <nav className="flex items-center gap-5">
+
+          {/* Desktop nav — all icons */}
+          <nav className="hidden md:flex items-center gap-5">
             <NavBtn icon={Home} active={tab === 'home'} onClick={() => { setTab('home'); setProfileId(null); }} />
             <NavBtn icon={Compass} active={tab === 'explore'} onClick={() => { setTab('explore'); setProfileId(null); }} />
             <NavBtn icon={Bell} active={tab === 'activity'} onClick={() => { setTab('activity'); setProfileId(null); }} />
@@ -62,6 +64,12 @@ export default function App() {
             <button onClick={signOut} className="text-[#8e8e8e] hover:text-[#262626] p-1" aria-label="Sign out">
               <LogOut className="w-6 h-6" />
             </button>
+          </nav>
+
+          {/* Mobile header — Activity + Chat shortcuts */}
+          <nav className="flex md:hidden items-center gap-4">
+            <NavBtn icon={Bell} active={tab === 'activity'} onClick={() => { setTab('activity'); setProfileId(null); }} />
+            <NavBtn icon={MessageCircle} active={tab === 'chat'} onClick={() => { setTab('chat'); setChatWith(null); }} />
           </nav>
         </div>
       </header>
@@ -83,14 +91,12 @@ export default function App() {
         )}
       </main>
 
-      {/* Mobile bottom nav */}
+      {/* Mobile bottom nav — 5 primary tabs */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 h-14 bg-white border-t border-[#dbdbdb] flex items-center justify-around z-30">
         <NavBtn icon={Home} active={tab === 'home'} onClick={() => { setTab('home'); setProfileId(null); }} />
         <NavBtn icon={Compass} active={tab === 'explore'} onClick={() => { setTab('explore'); setProfileId(null); }} />
-        <NavBtn icon={Bell} active={tab === 'activity'} onClick={() => { setTab('activity'); setProfileId(null); }} />
-        <NavBtn icon={Clapperboard} active={tab === 'reels'} onClick={() => { setTab('reels'); setProfileId(null); }} />
         <NavBtn icon={PlusSquare} active={tab === 'create'} onClick={() => setTab('create')} />
-        <NavBtn icon={MessageCircle} active={tab === 'chat'} onClick={() => { setTab('chat'); setChatWith(null); }} />
+        <NavBtn icon={Clapperboard} active={tab === 'reels'} onClick={() => { setTab('reels'); setProfileId(null); }} />
         <button
           onClick={() => { setProfileId(null); setTab('profile'); }}
           className={`p-1 rounded transition ${tab === 'profile' && isOwnProfile ? 'text-[#262626]' : 'text-[#8e8e8e]'}`}

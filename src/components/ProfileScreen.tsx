@@ -3,10 +3,10 @@ import { useAuth } from '../lib/auth';
 import { getProfile, updateProfile, uploadAvatar } from '../lib/profile';
 import { fetchUserPosts, fetchSavedPosts, deletePost } from '../lib/posts';
 import type { Profile, Post } from '../lib/supabase';
-import { Camera, Check, Loader2, Trash2, Grid3x3, Bookmark } from 'lucide-react';
+import { Camera, Check, Loader2, Trash2, Grid3x3, Bookmark, LogOut } from 'lucide-react';
 
-export default function ProfileScreen({ onBack }: { onBack: () => void }) {
-  const { user } = useAuth();
+export default function ProfileScreen({ onBack }: { onBack: () => void; onSignOut?: () => void }) {
+  const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [savedPosts, setSavedPosts] = useState<Post[]>([]);
@@ -77,6 +77,12 @@ export default function ProfileScreen({ onBack }: { onBack: () => void }) {
             ) : (
               <button onClick={() => setEditing(false)} className="px-4 py-1.5 text-sm font-semibold bg-[#0095f6] text-white rounded-lg">Done</button>
             )}
+            <button
+              onClick={() => signOut()}
+              className="px-4 py-1.5 text-sm font-semibold text-[#ed4956] hover:bg-[#efefef] rounded-lg flex items-center gap-1.5"
+            >
+              <LogOut className="w-4 h-4" /> Log out
+            </button>
           </div>
           <div className="flex gap-6 mb-3 text-sm">
             <span><b className="text-[#262626]">{posts.length}</b> <span className="ig-gray">posts</span></span>
