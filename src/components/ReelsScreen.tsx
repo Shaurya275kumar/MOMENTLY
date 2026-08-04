@@ -4,7 +4,7 @@ import { fetchReelPosts, toggleLikeDb } from '../lib/posts';
 import { useAuth } from '../lib/auth';
 import CommentsDrawer from './CommentsDrawer';
 import ShareModal from './ShareModal';
-import { Heart, MessageCircle, Send, MoreHorizontal, Music2, Play, Volume2, VolumeX, ChevronUp } from 'lucide-react';
+import { Heart, MessageCircle, Send, MoreHorizontal, Play, Volume2, VolumeX, ChevronUp, Disc3 } from 'lucide-react';
 
 export default function ReelsScreen({ onOpenProfile }: { onOpenProfile: (id: string) => void }) {
   const { user } = useAuth();
@@ -75,36 +75,74 @@ export default function ReelsScreen({ onOpenProfile }: { onOpenProfile: (id: str
 
 function ReelPlayer({ post, active, onLike, onComments, onShare, onOpenProfile }: { post: Post; active: boolean; onLike: () => void; onComments: () => void; onShare: () => void; onOpenProfile: (id: string) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(true);
+  const [likeBurst, setLikeBurst] = useState(false);
+  const hasMusic = !!post.music_tracks?.audio_url;
 
   // Play/pause based on visibility
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    if (active) { v.play().then(() => setPlaying(true)).catch(() => {}); }
-    else { v.pause(); }
+    if (active) {
+      v.play().then(() => setPlaying(true)).catch(() => {});
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play().catch(() => {});
+      }
+    } else {
+      v.pause();
+      if (audioRef.current) audioRef.current.pause();
+    }
   }, [active]);
 
   const togglePlay = () => {
     const v = videoRef.current;
     if (!v) return;
-    if (v.paused) { v.play(); setPlaying(true); } else { v.pause(); setPlaying(false); }
+    if (v.paused) {
+      v.play();
+      if (audioRef.current) audioRef.current.play().catch(() => {});
+      setPlaying(true);
+    } else {
+      v.pause();
+      if (audioRef.current) audioRef.current.pause();
+      setPlaying(false);
+    }
   };
+
   const toggleMute = () => {
     const v = videoRef.current;
     if (!v) return;
-    v.muted = !v.muted;
-    setMuted(v.muted);
+    const newMuted = !v.muted;
+    v.muted = newMuted;
+    if (audioRef.current) audioRef.current.muted = newMuted;
+    setMuted(newMuted);
+  };
+
+  const handleLike = () => {
+    if (!post.liked_by_me) {
+      setLikeBurst(true);
+      setTimeout(() => setLikeBurst(false), 800);
+    }
+    onLike();
   };
 
   return (
     <div className="relative w-full h-full flex items-center justify-center">
       <div className="relative bg-black h-full" style={{ aspectRatio: '9/16', maxHeight: '100%' }}>
         <video ref={videoRef} src={post.media_url} poster={post.thumbnail_url || undefined} className="w-full h-full object-cover" loop autoPlay muted playsInline onClick={togglePlay} />
+        {hasMusic && <audio ref={audioRef} src={post.music_tracks!.audio_url} loop preload="auto" muted />}
+
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
 
-        <button onClick={toggleMute} className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/40 text-white flex items-center justify-center z-10">
+        {likeBurst && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+            <Heart className="w-20 h-20 text-white fill-[#ed4956] animate-heart-burst" />
+          </div>
+        )}
+
+        <button onClick={toggleMute} className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/40 text-white flex items-center justify-center z-10 transition active:scale-90">
           {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
         </button>
         {!playing && active && <button onClick={togglePlay} className="absolute inset-0 flex items-center justify-center z-10"><Play className="w-12 h-12 text-white/80" /></button>}
@@ -116,13 +154,16 @@ function ReelPlayer({ post, active, onLike, onComments, onShare, onOpenProfile }
           </div>
           {post.caption && <p className="text-sm leading-snug mb-2 line-clamp-3">{post.caption}</p>}
           {post.music_tracks && (
-            <div className="flex items-center gap-2 text-xs"><Music2 className="w-3.5 h-3.5 shrink-0" /><span className="truncate">{post.music_tracks.title} · {post.music_tracks.artist}</span></div>
+            <div className="flex items-center gap-2 text-xs overflow-hidden">
+              <Disc3 className="w-3.5 h-3.5 shrink-0 animate-[spin_3s_linear_infinite]" />
+              <span className="truncate animate-[marquee_8s_linear_infinite] inline-block whitespace-nowrap">{post.music_tracks.title} · {post.music_tracks.artist}</span>
+            </div>
           )}
         </div>
 
         {/* Action rail */}
         <div className="absolute right-3 bottom-4 flex flex-col items-center gap-5 text-white z-10">
-          <ReelActions post={post} onLike={onLike} onComments={onComments} onShare={onShare} />
+          <ReelActions post={post} onLike={handleLike} onComments={onComments} onShare={onShare} />
         </div>
       </div>
     </div>
@@ -133,7 +174,7 @@ function ReelActions({ post, onLike, onComments, onShare }: { post: Post; onLike
   return (
     <>
       <button onClick={onLike} className="flex flex-col items-center gap-1 active:scale-90 transition">
-        <Heart className={`w-7 h-7 ${post.liked_by_me ? 'fill-[#ed4956] text-[#ed4956]' : 'text-white'}`} />
+        <Heart className={`w-7 h-7 transition-transform ${post.liked_by_me ? 'fill-[#ed4956] text-[#ed4956] scale-110' : 'text-white'}`} />
         <span className="text-xs font-medium text-white">{post.like_count || 0}</span>
       </button>
       <button onClick={onComments} className="flex flex-col items-center gap-1 active:scale-90 transition">

@@ -29,7 +29,7 @@ export default function ShareModal({ url, onClose }: Props) {
   const nativeShare = async () => {
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'DevGram', url });
+        await navigator.share({ title: 'Momently', url });
         onClose();
       } catch {
         // user cancelled — keep modal open

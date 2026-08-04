@@ -13,7 +13,7 @@ import ProfileScreen from './components/ProfileScreen';
 import ExploreScreen from './components/ExploreScreen';
 import ActivityScreen from './components/ActivityScreen';
 import StoryViewer from './components/StoryViewer';
-import { DevGramWordmark, DevGramMark } from './components/Logo';
+import { MomentlyWordmark, MomentlyMark } from './components/Logo';
 import { Loader2, Home, Clapperboard, PlusSquare, MessageCircle, User, LogOut, ArrowLeft, MessageSquare, Compass, Bell, X } from 'lucide-react';
 
 type Tab = 'home' | 'reels' | 'create' | 'chat' | 'profile' | 'explore' | 'activity';
@@ -61,7 +61,7 @@ export default function App() {
   const sidebarContent = (
     <>
       <div className="px-3 py-6 hidden md:flex justify-center xl:justify-start">
-        <DevGramWordmark />
+        <MomentlyWordmark />
       </div>
 
       <nav className="flex flex-col gap-1 px-3 flex-1">
@@ -101,7 +101,7 @@ export default function App() {
           <div className="absolute inset-0 bg-black/30" onClick={() => setDrawerOpen(false)} />
           <aside className="absolute left-0 inset-y-0 w-[260px] bg-white flex flex-col animate-[slideIn_0.2s_ease-out]">
             <div className="flex items-center justify-between px-3 py-4 border-b border-[#dbdbdb]">
-              <DevGramWordmark />
+              <MomentlyWordmark />
               <button onClick={() => setDrawerOpen(false)} className="p-1 text-[#8e8e8e] hover:text-[#262626]">
                 <X className="w-5 h-5" />
               </button>
@@ -123,8 +123,8 @@ export default function App() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <DevGramMark className="w-7 h-7" />
-            <DevGramWordmark />
+            <MomentlyMark className="w-7 h-7" />
+            <MomentlyWordmark />
           </div>
         </header>
 

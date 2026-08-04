@@ -35,7 +35,7 @@ export default function AuthScreen() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#fafafa] px-4 py-8">
       <div className="w-full max-w-[350px]">
         <div className="bg-white border border-[#dbdbdb] rounded-md px-10 py-8 flex flex-col items-center">
-          <h1 className="font-logo text-5xl text-[#262626] mb-8">DevGram</h1>
+          <h1 className="font-logo text-5xl text-[#262626] mb-8">Momently</h1>
 
           <form onSubmit={submit} className="w-full flex flex-col gap-1.5">
             {mode === 'signup' && (

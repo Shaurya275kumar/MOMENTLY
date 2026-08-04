@@ -5,7 +5,7 @@ import { useAuth } from '../lib/auth';
 import CommentsDrawer from './CommentsDrawer';
 import ShareModal from './ShareModal';
 import StoriesBar from './StoriesBar';
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Music2 } from 'lucide-react';
+import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Play, Pause, Disc3 } from 'lucide-react';
 
 export default function FeedScreen({ onOpenProfile }: { onOpenProfile: (id: string) => void }) {
   const { user } = useAuth();
@@ -78,7 +78,7 @@ function FeedPost({ post, onLike, onSave, onComments, onShare, onOpenProfile }: 
   };
 
   return (
-    <article className="bg-white md:border md:border-[#dbdbdb] rounded-none md:rounded-md overflow-hidden">
+    <article className="bg-white md:border md:border-[#dbdbdb] rounded-none md:rounded-md overflow-hidden animate-fade-in">
       <header className="flex items-center gap-3 px-4 py-3">
         <img src={post.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.profiles?.username || 'user')}&background=random`} className="w-8 h-8 rounded-full object-cover" alt="" />
         <button onClick={() => onOpenProfile(post.user_id)} className="text-sm font-semibold text-[#262626] hover:underline">{post.profiles?.username}</button>
@@ -112,7 +112,7 @@ function FeedPost({ post, onLike, onSave, onComments, onShare, onOpenProfile }: 
           <p className="text-sm text-[#262626] mt-1"><span className="font-semibold mr-1.5">{post.profiles?.username}</span>{post.caption}</p>
         )}
         {post.music_tracks && (
-          <div className="flex items-center gap-1.5 text-xs ig-gray mt-2"><Music2 className="w-3.5 h-3.5" /> {post.music_tracks.title} · {post.music_tracks.artist}</div>
+          <MusicBar post={post} />
         )}
         <p className="text-[10px] ig-gray uppercase mt-2 tracking-wide">{new Date(post.created_at).toLocaleDateString()}</p>
       </div>
@@ -145,7 +145,7 @@ function SuggestionsRail({ onOpenProfile }: { onOpenProfile: (id: string) => voi
       <div className="space-y-3">
         {suggestions.map((s) => <SuggestionRow key={s.id} profile={s} onOpen={() => onOpenProfile(s.id)} />)}
       </div>
-      <p className="text-xs ig-gray mt-8 leading-relaxed">© 2026 DevGram · A demo Instagram-style app</p>
+      <p className="text-xs ig-gray mt-8 leading-relaxed">© 2026 Momently · Capture every moment</p>
     </div>
   );
 }
@@ -187,4 +187,33 @@ function timeAgo(iso: string) {
   if (h < 24) return `${h}h`;
   const d = Math.floor(h / 24);
   return `${d}d`;
+}
+
+function MusicBar({ post }: { post: Post }) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+
+  const toggle = () => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (a.paused) {
+      a.play().then(() => setPlaying(true)).catch(() => {});
+    } else {
+      a.pause();
+      setPlaying(false);
+    }
+  };
+
+  if (!post.music_tracks?.audio_url) return null;
+
+  return (
+    <div className="flex items-center gap-2 mt-2 px-2.5 py-1.5 rounded-lg bg-[#f5f5f5] max-w-fit">
+      <button onClick={toggle} className="w-6 h-6 rounded-full bg-[#262626] text-white flex items-center justify-center flex-shrink-0 active:scale-90 transition">
+        {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+      </button>
+      <Disc3 className={`w-4 h-4 text-[#8e8e8e] flex-shrink-0 ${playing ? 'animate-[spin_2s_linear_infinite]' : ''}`} />
+      <span className="text-xs ig-gray truncate">{post.music_tracks.title} · {post.music_tracks.artist}</span>
+      <audio ref={audioRef} src={post.music_tracks.audio_url} loop preload="none" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} />
+    </div>
+  );
 }

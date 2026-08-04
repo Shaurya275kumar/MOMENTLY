@@ -35,7 +35,7 @@ export type Post = {
   music_id: string | null;
   created_at: string;
   profiles: Profile | null;
-  music_tracks: { title: string; artist: string } | null;
+  music_tracks: { title: string; artist: string; audio_url: string } | null;
   like_count: number;
   comment_count: number;
   liked_by_me: boolean;
