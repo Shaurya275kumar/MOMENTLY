@@ -30,6 +30,15 @@ export default function MusicPickerModal({ onConfirm, onClose, initialSong, init
   const searchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const waveformRef = useRef<HTMLDivElement>(null);
 
+  // Refs to avoid stale closures in audio listeners
+  const startTimeRef = useRef(startTime);
+  const clipDurationRef = useRef(clipDuration);
+  const playingRef = useRef(playing);
+
+  useEffect(() => { startTimeRef.current = startTime; }, [startTime]);
+  useEffect(() => { clipDurationRef.current = clipDuration; }, [clipDuration]);
+  useEffect(() => { playingRef.current = playing; }, [playing]);
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -45,7 +54,7 @@ export default function MusicPickerModal({ onConfirm, onClose, initialSong, init
     return () => clearTimeout(searchTimer.current);
   }, [query]);
 
-  // Audio event handlers for trim step
+  // Audio event handlers — attached once when entering trim step, use refs for values
   useEffect(() => {
     if (step !== 'trim') return;
     const audio = audioRef.current;
@@ -57,13 +66,17 @@ export default function MusicPickerModal({ onConfirm, onClose, initialSong, init
     };
     const handleTime = () => {
       setCurrentTime(audio.currentTime);
-      if (audio.currentTime >= startTime + clipDuration) {
+      if (audio.currentTime >= startTimeRef.current + clipDurationRef.current) {
         audio.pause();
-        audio.currentTime = startTime;
+        audio.currentTime = startTimeRef.current;
+        setCurrentTime(startTimeRef.current);
         setPlaying(false);
       }
     };
-    const handleEnded = () => { setPlaying(false); setCurrentTime(startTime); };
+    const handleEnded = () => {
+      setPlaying(false);
+      setCurrentTime(startTimeRef.current);
+    };
 
     audio.addEventListener('loadedmetadata', handleLoaded);
     audio.addEventListener('timeupdate', handleTime);
@@ -72,52 +85,93 @@ export default function MusicPickerModal({ onConfirm, onClose, initialSong, init
       audio.removeEventListener('loadedmetadata', handleLoaded);
       audio.removeEventListener('timeupdate', handleTime);
       audio.removeEventListener('ended', handleEnded);
+      audio.pause();
     };
-  }, [step, startTime, clipDuration]);
+  }, [step]);
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    if (playing) {
+    if (playingRef.current) {
       audio.pause();
       setPlaying(false);
     } else {
-      if (Math.abs(audio.currentTime - startTime) > 1) audio.currentTime = startTime;
-      audio.play().then(() => setPlaying(true)).catch(() => {});
+      if (Math.abs(audio.currentTime - startTimeRef.current) > 1 || audio.currentTime === 0) {
+        audio.currentTime = startTimeRef.current;
+        setCurrentTime(startTimeRef.current);
+      }
+      audio.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
     }
-  }, [playing, startTime]);
+  }, []);
 
   const handleSelect = (song: Song) => {
     setSelected(song);
     setStartTime(0);
     setClipDuration(Math.min(DEFAULT_CLIP_DURATION, song.duration_sec || DEFAULT_CLIP_DURATION));
+    setPlaying(false);
+    setCurrentTime(0);
+    setAudioDuration(0);
     setStep('trim');
   };
 
   const handleConfirm = () => {
+    const audio = audioRef.current;
+    if (audio) audio.pause();
     if (!selected) return;
     onConfirm(selected, startTime, clipDuration);
+  };
+
+  const handleClose = () => {
+    const audio = audioRef.current;
+    if (audio) audio.pause();
+    onClose();
+  };
+
+  const handleBack = () => {
+    const audio = audioRef.current;
+    if (audio) { audio.pause(); setPlaying(false); }
+    setStep('browse');
   };
 
   const maxStart = Math.max(0, (audioDuration || selected?.duration_sec || 0) - clipDuration);
 
   const seekWaveform = (clientX: number) => {
     const bar = waveformRef.current;
-    if (!bar || audioDuration <= 0) return;
+    const audio = audioRef.current;
+    if (!bar || !audio || audioDuration <= 0) return;
     const rect = bar.getBoundingClientRect();
     const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    const newStart = Math.floor(ratio * (audioDuration - clipDuration));
-    setStartTime(Math.max(0, Math.min(newStart, maxStart)));
-    if (audioRef.current) {
-      audioRef.current.currentTime = Math.max(0, Math.min(newStart, maxStart));
+    const newStart = Math.max(0, Math.min(Math.floor(ratio * (audioDuration - clipDuration)), maxStart));
+    setStartTime(newStart);
+    if (playingRef.current) {
+      audio.currentTime = newStart;
+      setCurrentTime(newStart);
     }
   };
 
-  // Generate waveform bars (deterministic based on song id)
+  const handleStartChange = (val: number) => {
+    setStartTime(val);
+    const audio = audioRef.current;
+    if (audio && playingRef.current) {
+      audio.currentTime = val;
+      setCurrentTime(val);
+    }
+  };
+
+  const handleDurationChange = (val: number) => {
+    setClipDuration(val);
+    // If current position is past the new end, reset to start
+    const audio = audioRef.current;
+    if (audio && audio.currentTime >= startTimeRef.current + val) {
+      audio.currentTime = startTimeRef.current;
+      setCurrentTime(startTimeRef.current);
+    }
+  };
+
   const waveBars = selected ? generateWaveform(selected.id, 80) : [];
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={handleClose}>
       <div className="absolute inset-0 bg-black/70" />
       <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col mx-4 animate-scale-in" onClick={(e) => e.stopPropagation()}>
         {step === 'browse' && (
@@ -127,7 +181,7 @@ export default function MusicPickerModal({ onConfirm, onClose, initialSong, init
             query={query}
             setQuery={setQuery}
             onSelect={handleSelect}
-            onClose={onClose}
+            onClose={handleClose}
           />
         )}
         {step === 'trim' && selected && (
@@ -144,11 +198,11 @@ export default function MusicPickerModal({ onConfirm, onClose, initialSong, init
             maxStart={maxStart}
             onTogglePlay={togglePlay}
             onSeekWaveform={seekWaveform}
-            onChangeStart={setStartTime}
-            onChangeDuration={setClipDuration}
-            onBack={() => setStep('browse')}
+            onChangeStart={handleStartChange}
+            onChangeDuration={handleDurationChange}
+            onBack={handleBack}
             onConfirm={handleConfirm}
-            onClose={onClose}
+            onClose={handleClose}
           />
         )}
       </div>
@@ -182,7 +236,7 @@ function BrowseStep({ songs, loading, query, setQuery, onSelect, onClose }: {
           />
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-h-[200px]">
         {loading && <div className="py-12 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-[#0095f6]" /></div>}
         {!loading && songs.length === 0 && <p className="text-center text-sm text-[#8e8e8e] py-12">No songs found</p>}
         {!loading && songs.map((song) => (
@@ -309,7 +363,7 @@ function TrimStep({
             min={0}
             max={Math.max(0, maxStart)}
             step={1}
-            value={startTime}
+            value={Math.min(startTime, maxStart)}
             onChange={(e) => onChangeStart(parseInt(e.target.value))}
             className="w-full accent-[#0095f6] cursor-pointer"
           />
@@ -373,7 +427,6 @@ function generateWaveform(seed: string, count: number): number[] {
   for (let i = 0; i < count; i++) {
     rng = (rng * 9301 + 49297) % 233280;
     const h = 20 + (rng / 233280) * 70;
-    // Create a wave-like pattern
     const wave = Math.sin((i / count) * Math.PI * 4) * 15;
     bars.push(Math.max(10, Math.min(95, h + wave)));
   }

@@ -273,7 +273,7 @@ function PostMusicBar({ song, startTime, clipDuration, onOpenSong }: { song: Pos
       <audio
         ref={audioRef}
         src={song.preview_url}
-        preload="none"
+        preload="metadata"
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
         onTimeUpdate={(e) => {

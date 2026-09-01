@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Search, Music as MusicIcon, TrendingUp, Clock, Flame, Sparkles, X, ChevronRight, Play } from 'lucide-react';
 import { fetchSongs, fetchSongsByGenre, getGenres, formatDuration, incrementPlayCount, type Song } from '../lib/music';
 import AudioPlayer from './AudioPlayer';
@@ -26,6 +26,7 @@ export default function MusicLibraryScreen({ onOpenSong, onBack }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('popular');
   const [genreFilter, setGenreFilter] = useState('All');
   const [nowPlaying, setNowPlaying] = useState<Song | null>(null);
+  const playerRef = useRef<{ play: () => void } | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const loadSongs = useCallback(async () => {
@@ -54,8 +55,15 @@ export default function MusicLibraryScreen({ onOpenSong, onBack }: Props) {
   const genres = getGenres();
 
   const handlePlay = (song: Song) => {
-    setNowPlaying(song);
-    incrementPlayCount(song.id).catch(() => {});
+    if (nowPlaying?.id === song.id) {
+      // Toggle play/pause on the existing player
+      playerRef.current?.play();
+    } else {
+      setNowPlaying(song);
+      incrementPlayCount(song.id).catch(() => {});
+      // Auto-play after the new player mounts
+      setTimeout(() => playerRef.current?.play(), 100);
+    }
   };
 
   const isSearching = query.trim().length > 0;
@@ -158,7 +166,12 @@ export default function MusicLibraryScreen({ onOpenSong, onBack }: Props) {
       {/* Sticky mini player */}
       {nowPlaying && (
         <div className="fixed bottom-0 left-0 right-0 md:left-[72px] xl:left-[244px] z-30 bg-white border-t border-[#dbdbdb] px-4 py-3 shadow-lg">
-          <AudioPlayer song={nowPlaying} compact onPlay={() => incrementPlayCount(nowPlaying.id).catch(() => {})} />
+          <StickyPlayer
+            ref={playerRef}
+            song={nowPlaying}
+            onPlay={() => incrementPlayCount(nowPlaying.id).catch(() => {})}
+            onClose={() => setNowPlaying(null)}
+          />
         </div>
       )}
     </div>
@@ -254,3 +267,29 @@ function EmptyState({ query }: { query: string }) {
     </div>
   );
 }
+
+const StickyPlayer = forwardRef<{ play: () => void }, { song: Song; onPlay: () => void; onClose: () => void }>(({ song, onPlay, onClose }, ref) => {
+  const audioPlayerRef = useRef<HTMLDivElement>(null);
+  const [playKey, setPlayKey] = useState(0);
+
+  useImperativeHandle(ref, () => ({
+    play: () => {
+      // Trigger a re-mount to auto-play by changing key
+      setPlayKey((k) => k + 1);
+    },
+  }), []);
+
+  // When playKey changes (except initial), simulate a click on the play button
+  useEffect(() => {
+    if (playKey === 0) return;
+    const btn = audioPlayerRef.current?.querySelector<HTMLButtonElement>('button[aria-label="Play"]');
+    btn?.click();
+  }, [playKey]);
+
+  return (
+    <div ref={audioPlayerRef}>
+      <AudioPlayer key={playKey} song={song} compact onPlay={onPlay} onClose={onClose} />
+    </div>
+  );
+});
+StickyPlayer.displayName = 'StickyPlayer';

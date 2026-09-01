@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Play, Pause, Loader2, Volume2, VolumeX, AlertCircle } from 'lucide-react';
+import { Play, Pause, Loader2, Volume2, VolumeX, AlertCircle, X } from 'lucide-react';
 import { formatDuration } from '../lib/music';
 import type { Song } from '../lib/music';
 
@@ -10,11 +10,12 @@ type Props = {
   compact?: boolean;
   onPlay?: () => void;
   className?: string;
+  onClose?: () => void;
 };
 
 type PlayerState = 'idle' | 'loading' | 'playing' | 'paused' | 'error';
 
-export default function AudioPlayer({ song, startTime = 0, clipDuration = null, compact = false, onPlay, className = '' }: Props) {
+export default function AudioPlayer({ song, startTime = 0, clipDuration = null, compact = false, onPlay, className = '', onClose }: Props) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [state, setState] = useState<PlayerState>('idle');
   const [currentTime, setCurrentTime] = useState(startTime);
@@ -23,7 +24,16 @@ export default function AudioPlayer({ song, startTime = 0, clipDuration = null, 
   const [muted, setMuted] = useState(false);
   const progressRef = useRef<HTMLDivElement>(null);
 
-  const effectiveDuration = clipDuration && clipDuration > 0 ? Math.min(clipDuration, duration || clipDuration) : duration;
+  const effectiveDuration = clipDuration && clipDuration > 0
+    ? Math.min(clipDuration, duration > 0 ? duration : clipDuration)
+    : duration;
+
+  // Reset state when song or timing changes
+  useEffect(() => {
+    setState('idle');
+    setCurrentTime(startTime);
+    setDuration(song.duration_sec || 0);
+  }, [song.id, startTime, clipDuration, song.duration_sec]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -31,10 +41,8 @@ export default function AudioPlayer({ song, startTime = 0, clipDuration = null, 
 
     const handleLoadedMetadata = () => {
       const d = audio.duration;
-      if (isFinite(d) && d > 0) {
-        setDuration(d);
-      }
-      setState('idle');
+      if (isFinite(d) && d > 0) setDuration(d);
+      setState((s) => (s === 'loading' ? 'idle' : s));
     };
     const handleWaiting = () => setState('loading');
     const handleCanPlay = () => setState((s) => (s === 'loading' ? 'idle' : s));
@@ -70,19 +78,16 @@ export default function AudioPlayer({ song, startTime = 0, clipDuration = null, 
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
     };
-  }, [startTime, clipDuration]);
+  }, [startTime, clipDuration, song.id]);
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (audio) {
-      audio.volume = muted ? 0 : volume;
-    }
+    if (audio) audio.volume = muted ? 0 : volume;
   }, [volume, muted]);
 
   const togglePlay = useCallback(async () => {
     const audio = audioRef.current;
-    if (!audio) return;
-    if (state === 'error') return;
+    if (!audio || state === 'error') return;
 
     if (state === 'playing') {
       audio.pause();
@@ -93,6 +98,7 @@ export default function AudioPlayer({ song, startTime = 0, clipDuration = null, 
     try {
       if (Math.abs(audio.currentTime - startTime) > 1 || audio.currentTime === 0) {
         audio.currentTime = startTime;
+        setCurrentTime(startTime);
       }
       setState('loading');
       await audio.play();
@@ -133,13 +139,18 @@ export default function AudioPlayer({ song, startTime = 0, clipDuration = null, 
         onSeek={seek}
         progressRef={progressRef}
         className={className}
+        onClose={onClose}
+        volume={volume}
+        muted={muted}
+        onToggleMute={() => setMuted(!muted)}
+        onVolumeChange={(v) => { setVolume(v); setMuted(false); }}
       />
     );
   }
 
   return (
     <div className={`bg-white rounded-2xl border border-[#dbdbdb] p-4 sm:p-5 ${className}`}>
-      <audio ref={audioRef} src={song.preview_url} preload="metadata" crossOrigin="anonymous" />
+      <audio ref={audioRef} src={song.preview_url} preload="metadata" />
       <div className="flex items-center gap-4">
         <div className="relative flex-shrink-0">
           <img
@@ -226,6 +237,11 @@ function CompactPlayer({
   onSeek,
   progressRef,
   className,
+  onClose,
+  volume,
+  muted,
+  onToggleMute,
+  onVolumeChange,
 }: {
   state: PlayerState;
   playing: boolean;
@@ -237,6 +253,11 @@ function CompactPlayer({
   onSeek: (x: number) => void;
   progressRef: React.RefObject<HTMLDivElement | null>;
   className: string;
+  onClose?: () => void;
+  volume: number;
+  muted: boolean;
+  onToggleMute: () => void;
+  onVolumeChange: (v: number) => void;
 }) {
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
@@ -268,6 +289,24 @@ function CompactPlayer({
         </div>
         <span className="text-[10px] text-[#8e8e8e] tabular-nums">{formatDuration(effectiveDuration)}</span>
       </div>
+      <button onClick={onToggleMute} className="hidden sm:flex text-[#8e8e8e] hover:text-[#262626] transition" aria-label="Mute">
+        {muted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+      </button>
+      <input
+        type="range"
+        min={0}
+        max={1}
+        step={0.05}
+        value={muted ? 0 : volume}
+        onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
+        className="hidden sm:block w-16 accent-[#0095f6] cursor-pointer"
+        aria-label="Volume"
+      />
+      {onClose && (
+        <button onClick={onClose} className="text-[#8e8e8e] hover:text-[#262626] transition flex-shrink-0" aria-label="Close player">
+          <X className="w-4 h-4" />
+        </button>
+      )}
     </div>
   );
 }

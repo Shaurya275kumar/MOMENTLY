@@ -235,23 +235,25 @@ export default function CreateScreen({ onDone }: Props) {
               </div>
               <textarea value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Write a caption…" rows={4} className="w-full text-sm focus:outline-none placeholder-[#8e8e8e] resize-none border-b border-[#dbdbdb] pb-3" />
 
-              {/* Add Music button */}
-              <button onClick={() => setShowMusic(true)} className="w-full flex items-center gap-3 py-2.5 border-b border-[#dbdbdb] hover:bg-[#fafafa] transition text-left">
-                <Music2 className="w-5 h-5 text-[#262626]" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-[#262626]">{selectedSong ? selectedSong.title : 'Add music'}</p>
-                  <p className="text-xs ig-gray">{selectedSong ? selectedSong.artist : 'Choose a track'}</p>
-                </div>
+              {/* Add Music row */}
+              <div className="flex items-center gap-3 py-2.5 border-b border-[#dbdbdb]">
+                <button onClick={() => setShowMusic(true)} className="flex items-center gap-3 flex-1 min-w-0 hover:bg-[#fafafa] transition text-left -m-1 p-1 rounded">
+                  <Music2 className="w-5 h-5 text-[#262626] flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-[#262626]">{selectedSong ? selectedSong.title : 'Add music'}</p>
+                    <p className="text-xs ig-gray">{selectedSong ? selectedSong.artist : 'Choose a track'}</p>
+                  </div>
+                </button>
                 {selectedSong && (
                   <button
-                    onClick={(e) => { e.stopPropagation(); setSelectedSong(null); }}
-                    className="p-1 text-[#8e8e8e] hover:text-[#ed4956] transition"
+                    onClick={() => setSelectedSong(null)}
+                    className="p-1 text-[#8e8e8e] hover:text-[#ed4956] transition flex-shrink-0"
                     aria-label="Remove music"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 )}
-              </button>
+              </div>
 
               {/* Selected song preview card */}
               {selectedSong && (
