@@ -79,7 +79,8 @@ function ReelPlayer({ post, active, onLike, onComments, onShare, onOpenProfile }
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(true);
   const [likeBurst, setLikeBurst] = useState(false);
-  const hasMusic = !!post.music_tracks?.audio_url;
+  const hasMusic = !!(post.music_tracks?.audio_url || post.post_music?.songs?.preview_url);
+  const musicSong = post.post_music?.songs;
 
   // Play/pause based on visibility
   useEffect(() => {
@@ -132,7 +133,7 @@ function ReelPlayer({ post, active, onLike, onComments, onShare, onOpenProfile }
     <div className="relative w-full h-full flex items-center justify-center">
       <div className="relative bg-black h-full" style={{ aspectRatio: '9/16', maxHeight: '100%' }}>
         <video ref={videoRef} src={post.media_url} poster={post.thumbnail_url || undefined} className="w-full h-full object-cover" loop autoPlay muted playsInline onClick={togglePlay} />
-        {hasMusic && <audio ref={audioRef} src={post.music_tracks!.audio_url} loop preload="auto" muted />}
+        {hasMusic && <audio ref={audioRef} src={musicSong?.preview_url || post.music_tracks!.audio_url} loop preload="auto" muted />}
 
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
 
@@ -153,10 +154,10 @@ function ReelPlayer({ post, active, onLike, onComments, onShare, onOpenProfile }
             <button onClick={() => onOpenProfile(post.user_id)} className="font-semibold text-sm hover:underline">{post.profiles?.username}</button>
           </div>
           {post.caption && <p className="text-sm leading-snug mb-2 line-clamp-3">{post.caption}</p>}
-          {post.music_tracks && (
+          {(musicSong || post.music_tracks) && (
             <div className="flex items-center gap-2 text-xs overflow-hidden">
               <Disc3 className="w-3.5 h-3.5 shrink-0 animate-[spin_3s_linear_infinite]" />
-              <span className="truncate animate-[marquee_8s_linear_infinite] inline-block whitespace-nowrap">{post.music_tracks.title} · {post.music_tracks.artist}</span>
+              <span className="truncate animate-[marquee_8s_linear_infinite] inline-block whitespace-nowrap">{musicSong ? `${musicSong.title} · ${musicSong.artist}` : `${post.music_tracks!.title} · ${post.music_tracks!.artist}`}</span>
             </div>
           )}
         </div>

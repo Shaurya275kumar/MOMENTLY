@@ -3,7 +3,7 @@ import { supabase, type Post } from './supabase';
 export async function fetchFeedPosts(userId: string, limit = 30): Promise<Post[]> {
   const { data } = await supabase
     .from('posts')
-    .select('*, profiles!posts_user_id_fkey(*), music_tracks(*)')
+    .select('*, profiles!posts_user_id_fkey(*), music_tracks(*), post_music(*, songs(*))')
     .order('created_at', { ascending: false })
     .limit(limit);
   return await withCounts(data as Post[] | null, userId);
@@ -12,7 +12,7 @@ export async function fetchFeedPosts(userId: string, limit = 30): Promise<Post[]
 export async function fetchReelPosts(userId: string, limit = 20): Promise<Post[]> {
   const { data } = await supabase
     .from('posts')
-    .select('*, profiles!posts_user_id_fkey(*), music_tracks(*)')
+    .select('*, profiles!posts_user_id_fkey(*), music_tracks(*), post_music(*, songs(*))')
     .eq('media_type', 'reel')
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -22,7 +22,7 @@ export async function fetchReelPosts(userId: string, limit = 20): Promise<Post[]
 export async function fetchUserPosts(userId: string, viewerId: string): Promise<Post[]> {
   const { data } = await supabase
     .from('posts')
-    .select('*, profiles!posts_user_id_fkey(*), music_tracks(*)')
+    .select('*, profiles!posts_user_id_fkey(*), music_tracks(*), post_music(*, songs(*))')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
   return await withCounts(data as Post[] | null, viewerId);
@@ -31,7 +31,7 @@ export async function fetchUserPosts(userId: string, viewerId: string): Promise<
 export async function fetchExplorePosts(userId: string, limit = 60): Promise<Post[]> {
   const { data } = await supabase
     .from('posts')
-    .select('*, profiles!posts_user_id_fkey(*), music_tracks(*)')
+    .select('*, profiles!posts_user_id_fkey(*), music_tracks(*), post_music(*, songs(*))')
     .order('created_at', { ascending: false })
     .limit(limit);
   return await withCounts(data as Post[] | null, userId);
@@ -102,7 +102,7 @@ export async function fetchSavedPosts(userId: string): Promise<Post[]> {
   const ids = saves.map((s: any) => s.post_id);
   const { data } = await supabase
     .from('posts')
-    .select('*, profiles!posts_user_id_fkey(*), music_tracks(*)')
+    .select('*, profiles!posts_user_id_fkey(*), music_tracks(*), post_music(*, songs(*))')
     .in('id', ids)
     .order('created_at', { ascending: false });
   return await withCounts(data as Post[] | null, userId);

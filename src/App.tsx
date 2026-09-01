@@ -4,6 +4,7 @@ import { supabase, type Post, type Profile } from './lib/supabase';
 import { getProfile } from './lib/profile';
 import { fetchUserPosts } from './lib/posts';
 import { fetchUserStoryGroups, type StoryGroup } from './lib/stories';
+import { checkIsAdmin } from './lib/music';
 import AuthScreen from './components/AuthScreen';
 import FeedScreen from './components/FeedScreen';
 import ReelsScreen from './components/ReelsScreen';
@@ -13,18 +14,22 @@ import ProfileScreen from './components/ProfileScreen';
 import ExploreScreen from './components/ExploreScreen';
 import ActivityScreen from './components/ActivityScreen';
 import StoryViewer from './components/StoryViewer';
+import MusicLibraryScreen from './components/MusicLibraryScreen';
+import SongDetailScreen from './components/SongDetailScreen';
+import AdminMusicDashboard from './components/AdminMusicDashboard';
 import { MomentlyWordmark, MomentlyMark } from './components/Logo';
-import { Loader2, Home, Clapperboard, PlusSquare, MessageCircle, User, LogOut, ArrowLeft, MessageSquare, Compass, Bell, X } from 'lucide-react';
+import { Loader2, Home, Clapperboard, PlusSquare, MessageCircle, User, LogOut, ArrowLeft, MessageSquare, Compass, Bell, X, Music as MusicIcon, Shield } from 'lucide-react';
 
-type Tab = 'home' | 'reels' | 'create' | 'chat' | 'profile' | 'explore' | 'activity';
+type Tab = 'home' | 'reels' | 'create' | 'chat' | 'profile' | 'explore' | 'activity' | 'music' | 'song' | 'admin';
 
-const NAV_ITEMS = [
-  { id: 'home' as Tab, icon: Home, label: 'Home' },
-  { id: 'explore' as Tab, icon: Compass, label: 'Explore' },
-  { id: 'activity' as Tab, icon: Bell, label: 'Activity' },
-  { id: 'reels' as Tab, icon: Clapperboard, label: 'Reels' },
-  { id: 'create' as Tab, icon: PlusSquare, label: 'Create' },
-  { id: 'chat' as Tab, icon: MessageCircle, label: 'Messages' },
+const NAV_ITEMS: { id: Tab; icon: typeof Home; label: string }[] = [
+  { id: 'home', icon: Home, label: 'Home' },
+  { id: 'explore', icon: Compass, label: 'Explore' },
+  { id: 'activity', icon: Bell, label: 'Activity' },
+  { id: 'reels', icon: Clapperboard, label: 'Reels' },
+  { id: 'music', icon: MusicIcon, label: 'Music' },
+  { id: 'create', icon: PlusSquare, label: 'Create' },
+  { id: 'chat', icon: MessageCircle, label: 'Messages' },
 ];
 
 export default function App() {
@@ -33,6 +38,12 @@ export default function App() {
   const [profileId, setProfileId] = useState<string | null>(null);
   const [chatWith, setChatWith] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [songId, setSongId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (user) checkIsAdmin(user.id).then(setIsAdmin);
+  }, [user]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-[#0095f6]" /></div>;
   if (!user) return <AuthScreen />;
@@ -49,14 +60,23 @@ export default function App() {
     setDrawerOpen(false);
   };
 
+  const openSong = (id: string) => {
+    setSongId(id);
+    setTab('song');
+    setDrawerOpen(false);
+  };
+
   const switchTab = (t: Tab) => {
     setTab(t);
     if (t !== 'profile') setProfileId(null);
     if (t !== 'chat') setChatWith(null);
+    if (t !== 'song') setSongId(null);
     setDrawerOpen(false);
   };
 
   const isOwnProfile = profileId === null || profileId === user.id;
+
+  const navItems = isAdmin ? [...NAV_ITEMS, { id: 'admin' as Tab, icon: Shield, label: 'Music Admin' }] : NAV_ITEMS;
 
   const sidebarContent = (
     <>
@@ -65,7 +85,7 @@ export default function App() {
       </div>
 
       <nav className="flex flex-col gap-1 px-3 flex-1">
-        {NAV_ITEMS.map(({ id, icon, label }) => (
+        {navItems.map(({ id, icon, label }) => (
           <SidebarItem
             key={id}
             icon={icon}
@@ -87,6 +107,8 @@ export default function App() {
       </div>
     </>
   );
+
+  const fullScreen = tab === 'song' || tab === 'admin';
 
   return (
     <div className="min-h-screen bg-white flex">
@@ -129,11 +151,14 @@ export default function App() {
         </header>
 
         {/* Content */}
-        <main className={`flex-1 ${tab === 'reels' ? '' : 'max-w-[935px] mx-auto w-full'}`}>
-          {tab === 'home' && <FeedScreen onOpenProfile={openProfile} />}
+        <main className={`flex-1 ${tab === 'reels' || fullScreen ? '' : 'max-w-[935px] mx-auto w-full'}`}>
+          {tab === 'home' && <FeedScreen onOpenProfile={openProfile} onOpenSong={openSong} />}
           {tab === 'explore' && <ExploreScreen onOpenProfile={openProfile} />}
           {tab === 'activity' && <ActivityScreen onOpenProfile={openProfile} />}
           {tab === 'reels' && <ReelsScreen onOpenProfile={openProfile} />}
+          {tab === 'music' && <MusicLibraryScreen onOpenSong={openSong} onBack={() => switchTab('home')} />}
+          {tab === 'song' && songId && <SongDetailScreen songId={songId} onBack={() => switchTab('music')} onOpenProfile={openProfile} />}
+          {tab === 'admin' && <AdminMusicDashboard onBack={() => switchTab('home')} />}
           {tab === 'create' && <CreateScreen onDone={() => setTab('home')} />}
           {tab === 'chat' && <ChatScreen initialUserId={chatWith} onOpenProfile={openProfile} />}
           {tab === 'profile' && (

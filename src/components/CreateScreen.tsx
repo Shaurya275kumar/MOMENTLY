@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { supabase, type MusicTrack } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { uploadFile } from '../lib/upload';
-import { Music2, X, Loader2, Check, Image as ImageIcon, Camera } from 'lucide-react';
+import { attachMusicToPost, type Song } from '../lib/music';
+import MusicPickerModal from './MusicPickerModal';
+import { Music2, X, Loader2, Image as ImageIcon, Camera, Disc3, Trash2 } from 'lucide-react';
 
 type Props = { onDone: () => void };
 
@@ -13,8 +15,9 @@ export default function CreateScreen({ onDone }: Props) {
   const [preview, setPreview] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
   const [mediaType, setMediaType] = useState<'reel' | 'image'>('image');
-  const [tracks, setTracks] = useState<MusicTrack[]>([]);
-  const [selectedTrack, setSelectedTrack] = useState<MusicTrack | null>(null);
+  const [selectedSong, setSelectedSong] = useState<Song | null>(null);
+  const [musicStart, setMusicStart] = useState(0);
+  const [musicDuration, setMusicDuration] = useState(15);
   const [showMusic, setShowMusic] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,10 +46,6 @@ export default function CreateScreen({ onDone }: Props) {
   const activeFilter = filters.find((f) => f.id === filter) || filters[0];
 
   useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from('music_tracks').select('*').order('title');
-      setTracks((data as MusicTrack[]) || []);
-    })();
     return () => stopCamera();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -140,14 +139,16 @@ export default function CreateScreen({ onDone }: Props) {
     setError(null);
     try {
       const url = await uploadFile('media', file, user.id);
-      const { error } = await supabase.from('posts').insert({
+      const { data, error: insertError } = await supabase.from('posts').insert({
         user_id: user.id,
         caption: caption.trim() || null,
         media_url: url,
         media_type: mediaType,
-        music_id: selectedTrack?.id || null,
-      });
-      if (error) throw error;
+      }).select('id').single();
+      if (insertError) throw insertError;
+      if (selectedSong && data) {
+        await attachMusicToPost(data.id, selectedSong.id, musicStart, musicDuration);
+      }
       onDone();
     } catch (e: any) {
       setError(e.message || 'Upload failed');
@@ -234,14 +235,36 @@ export default function CreateScreen({ onDone }: Props) {
               </div>
               <textarea value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Write a caption…" rows={4} className="w-full text-sm focus:outline-none placeholder-[#8e8e8e] resize-none border-b border-[#dbdbdb] pb-3" />
 
+              {/* Add Music button */}
               <button onClick={() => setShowMusic(true)} className="w-full flex items-center gap-3 py-2.5 border-b border-[#dbdbdb] hover:bg-[#fafafa] transition text-left">
                 <Music2 className="w-5 h-5 text-[#262626]" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-[#262626]">{selectedTrack ? selectedTrack.title : 'Add music'}</p>
-                  <p className="text-xs ig-gray">{selectedTrack ? selectedTrack.artist : 'Choose a track'}</p>
+                  <p className="text-sm font-medium text-[#262626]">{selectedSong ? selectedSong.title : 'Add music'}</p>
+                  <p className="text-xs ig-gray">{selectedSong ? selectedSong.artist : 'Choose a track'}</p>
                 </div>
-                {selectedTrack && <Check className="w-5 h-5 text-[#0095f6]" />}
+                {selectedSong && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setSelectedSong(null); }}
+                    className="p-1 text-[#8e8e8e] hover:text-[#ed4956] transition"
+                    aria-label="Remove music"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </button>
+
+              {/* Selected song preview card */}
+              {selectedSong && (
+                <div className="flex items-center gap-2.5 p-2.5 bg-[#fafafa] rounded-lg animate-slide-up">
+                  <img src={selectedSong.artwork_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedSong.title)}&background=0095f6&color=fff&size=80`} className="w-10 h-10 rounded-md object-cover" alt="" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-[#262626] truncate">{selectedSong.title}</p>
+                    <p className="text-[10px] ig-gray truncate">{selectedSong.artist} · {musicDuration}s clip</p>
+                  </div>
+                  <Disc3 className="w-4 h-4 text-[#8e8e8e] flex-shrink-0" />
+                  <button onClick={() => setShowMusic(true)} className="text-xs font-semibold text-[#0095f6] hover:underline">Edit</button>
+                </div>
+              )}
 
               {error && <p className="text-sm text-[#ed4956]">{error}</p>}
 
@@ -253,35 +276,19 @@ export default function CreateScreen({ onDone }: Props) {
         )}
 
         {showMusic && (
-          <MusicPicker tracks={tracks} selected={selectedTrack} onSelect={(t) => { setSelectedTrack(t); setShowMusic(false); }} onClose={() => setShowMusic(false)} />
+          <MusicPickerModal
+            initialSong={selectedSong}
+            initialStart={musicStart}
+            initialDuration={musicDuration}
+            onConfirm={(song, start, duration) => {
+              setSelectedSong(song);
+              setMusicStart(start);
+              setMusicDuration(duration);
+              setShowMusic(false);
+            }}
+            onClose={() => setShowMusic(false)}
+          />
         )}
-      </div>
-    </div>
-  );
-}
-
-function MusicPicker({ tracks, selected, onSelect, onClose }: { tracks: MusicTrack[]; selected: MusicTrack | null; onSelect: (t: MusicTrack | null) => void; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/70" />
-      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[75vh] flex flex-col mx-4" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-center px-5 py-3 border-b border-[#dbdbdb] relative">
-          <h3 className="font-semibold text-sm text-[#262626]">Choose music</h3>
-          <button onClick={onClose} className="absolute right-4 ig-gray"><X className="w-5 h-5" /></button>
-        </div>
-        <button onClick={() => onSelect(null)} className="px-5 py-3 text-left text-sm ig-gray hover:bg-[#fafafa] border-b border-[#dbdbdb]">No music</button>
-        <div className="flex-1 overflow-y-auto">
-          {tracks.map((t) => (
-            <button key={t.id} onClick={() => onSelect(t)} className={`w-full flex items-center gap-3 px-5 py-3 hover:bg-[#fafafa] text-left ${selected?.id === t.id ? 'bg-[#fafafa]' : ''}`}>
-              <img src={t.cover_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(t.title)}&background=random`} className="w-11 h-11 rounded-md object-cover" alt="" />
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-[#262626]">{t.title}</p>
-                <p className="text-xs ig-gray">{t.artist}</p>
-              </div>
-              {selected?.id === t.id && <Check className="w-5 h-5 text-[#0095f6]" />}
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   );

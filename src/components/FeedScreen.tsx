@@ -7,7 +7,7 @@ import ShareModal from './ShareModal';
 import StoriesBar from './StoriesBar';
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Play, Pause, Disc3 } from 'lucide-react';
 
-export default function FeedScreen({ onOpenProfile }: { onOpenProfile: (id: string) => void }) {
+export default function FeedScreen({ onOpenProfile, onOpenSong }: { onOpenProfile: (id: string) => void; onOpenSong?: (songId: string) => void }) {
   const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +43,7 @@ export default function FeedScreen({ onOpenProfile }: { onOpenProfile: (id: stri
         {posts.length === 0 && <p className="text-center ig-gray mt-20">No posts yet. Create one with the + button!</p>}
         <div className="space-y-6">
           {posts.map((post) => (
-            <FeedPost key={post.id} post={post} onLike={toggleLike} onSave={toggleSave} onComments={setCommentsFor} onShare={setSharePost} onOpenProfile={onOpenProfile} />
+            <FeedPost key={post.id} post={post} onLike={toggleLike} onSave={toggleSave} onComments={setCommentsFor} onShare={setSharePost} onOpenProfile={onOpenProfile} onOpenSong={onOpenSong} />
           ))}
         </div>
       </div>
@@ -57,7 +57,7 @@ export default function FeedScreen({ onOpenProfile }: { onOpenProfile: (id: stri
   );
 }
 
-function FeedPost({ post, onLike, onSave, onComments, onShare, onOpenProfile }: { post: Post; onLike: (p: Post) => void; onSave: (p: Post) => void; onComments: (id: string) => void; onShare: (p: Post) => void; onOpenProfile: (id: string) => void }) {
+function FeedPost({ post, onLike, onSave, onComments, onShare, onOpenProfile, onOpenSong }: { post: Post; onLike: (p: Post) => void; onSave: (p: Post) => void; onComments: (id: string) => void; onShare: (p: Post) => void; onOpenProfile: (id: string) => void; onOpenSong?: (songId: string) => void }) {
   const [burst, setBurst] = useState(false);
   const lastTapRef = useRef<number>(0);
 
@@ -111,7 +111,10 @@ function FeedPost({ post, onLike, onSave, onComments, onShare, onOpenProfile }: 
         {post.caption && (
           <p className="text-sm text-[#262626] mt-1"><span className="font-semibold mr-1.5">{post.profiles?.username}</span>{post.caption}</p>
         )}
-        {post.music_tracks && (
+        {post.post_music?.songs && (
+          <PostMusicBar song={post.post_music.songs} startTime={post.post_music.start_time} clipDuration={post.post_music.duration} onOpenSong={onOpenSong} />
+        )}
+        {post.music_tracks && !post.post_music?.songs && (
           <MusicBar post={post} />
         )}
         <p className="text-[10px] ig-gray uppercase mt-2 tracking-wide">{new Date(post.created_at).toLocaleDateString()}</p>
@@ -214,6 +217,75 @@ function MusicBar({ post }: { post: Post }) {
       <Disc3 className={`w-4 h-4 text-[#8e8e8e] flex-shrink-0 ${playing ? 'animate-[spin_2s_linear_infinite]' : ''}`} />
       <span className="text-xs ig-gray truncate">{post.music_tracks.title} · {post.music_tracks.artist}</span>
       <audio ref={audioRef} src={post.music_tracks.audio_url} loop preload="none" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} />
+    </div>
+  );
+}
+
+type PostMusicSong = {
+  id: string;
+  title: string;
+  artist: string;
+  artwork_url: string | null;
+  preview_url: string;
+  duration_sec: number | null;
+  source: string | null;
+  genre: string | null;
+};
+
+function PostMusicBar({ song, startTime, clipDuration, onOpenSong }: { song: PostMusicSong; startTime: number; clipDuration: number | null; onOpenSong?: (songId: string) => void }) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+
+  const toggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const a = audioRef.current;
+    if (!a) return;
+    if (a.paused) {
+      if (Math.abs(a.currentTime - startTime) > 1) a.currentTime = startTime;
+      a.play().then(() => setPlaying(true)).catch(() => {});
+    } else {
+      a.pause();
+      setPlaying(false);
+    }
+  };
+
+  const effectiveDuration = clipDuration && clipDuration > 0 ? clipDuration : (song.duration_sec || 0);
+  const progressPercent = effectiveDuration > 0 ? Math.max(0, Math.min(100, ((currentTime - startTime) / effectiveDuration) * 100)) : 0;
+
+  return (
+    <div className="flex items-center gap-2 mt-2 px-2.5 py-1.5 rounded-lg bg-[#f5f5f5] max-w-fit animate-slide-up">
+      <button onClick={toggle} className="w-6 h-6 rounded-full bg-[#262626] text-white flex items-center justify-center flex-shrink-0 active:scale-90 transition">
+        {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+      </button>
+      <Disc3 className={`w-4 h-4 text-[#8e8e8e] flex-shrink-0 ${playing ? 'animate-[spin_2s_linear_infinite]' : ''}`} />
+      <button
+        onClick={() => onOpenSong?.(song.id)}
+        className="text-xs ig-gray truncate hover:text-[#262626] hover:underline transition"
+      >
+        {song.title} · {song.artist}
+      </button>
+      {effectiveDuration > 0 && (
+        <div className="hidden sm:block w-16 h-1 bg-[#dbdbdb] rounded-full flex-shrink-0">
+          <div className="h-full bg-[#0095f6] rounded-full transition-[width]" style={{ width: `${progressPercent}%` }} />
+        </div>
+      )}
+      <audio
+        ref={audioRef}
+        src={song.preview_url}
+        preload="none"
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onTimeUpdate={(e) => {
+          const t = e.currentTarget.currentTime;
+          setCurrentTime(t);
+          if (clipDuration && clipDuration > 0 && t >= startTime + clipDuration) {
+            e.currentTarget.pause();
+            e.currentTarget.currentTime = startTime;
+            setPlaying(false);
+          }
+        }}
+      />
     </div>
   );
 }
