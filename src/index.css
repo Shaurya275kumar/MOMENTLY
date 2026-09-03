@@ -152,3 +152,58 @@ body { margin: 0; background: var(--ig-subtle); color: var(--ig-text); }
 }
 .form-input:focus { border-color: #0095f6; background: var(--ig-bg); }
 .form-input::placeholder { color: var(--ig-secondary); }
+
+/* Momently logo animations */
+@keyframes ml-gradient-shift {
+  0% { stop-color: #0ea5e9; }
+  33% { stop-color: #6366f1; }
+  66% { stop-color: #8b5cf6; }
+  100% { stop-color: #0ea5e9; }
+}
+@keyframes ml-gradient-shift-2 {
+  0% { stop-color: #6366f1; }
+  33% { stop-color: #8b5cf6; }
+  66% { stop-color: #0ea5e9; }
+  100% { stop-color: #6366f1; }
+}
+.ml-grad-stop-1 { animation: ml-gradient-shift 6s ease-in-out infinite; }
+.ml-grad-stop-2 { animation: ml-gradient-shift-2 6s ease-in-out infinite; }
+
+@keyframes ml-ring-tick {
+  0% { stroke-dashoffset: 0; }
+  50% { stroke-dashoffset: 20; }
+  100% { stroke-dashoffset: 0; }
+}
+.ml-ring {
+  stroke-dasharray: 5 3;
+  animation: ml-ring-tick 8s linear infinite;
+}
+
+@keyframes ml-path-draw {
+  0% { stroke-dashoffset: 48; }
+  20% { stroke-dashoffset: 0; }
+  80% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -48; }
+}
+.ml-path {
+  stroke-dasharray: 48;
+  animation: ml-path-draw 5s ease-in-out infinite;
+}
+
+@keyframes ml-center-pulse {
+  0%, 100% { r: 1.8; opacity: 1; }
+  50% { r: 2.6; opacity: 0.7; }
+}
+.ml-center { animation: ml-center-pulse 3s ease-in-out infinite; }
+
+@keyframes ml-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+.ml-mark { animation: ml-float 4s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ml-grad-stop-1, .ml-grad-stop-2, .ml-ring, .ml-path, .ml-center, .ml-mark {
+    animation: none;
+  }
+}
