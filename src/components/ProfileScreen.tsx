@@ -3,7 +3,8 @@ import { useAuth } from '../lib/auth';
 import { getProfile, updateProfile, uploadAvatar } from '../lib/profile';
 import { fetchUserPosts, fetchSavedPosts, deletePost } from '../lib/posts';
 import type { Profile, Post } from '../lib/supabase';
-import { Camera, Check, Loader2, Trash2, Grid3x3, Bookmark, LogOut, UserX } from 'lucide-react';
+import { Camera, Check, Loader2, Trash2, Grid3x3, Bookmark, LogOut, UserX, Pencil } from 'lucide-react';
+import EditPostModal from './EditPostModal';
 
 export default function ProfileScreen({ onBack }: { onBack: () => void; onSignOut?: () => void }) {
   const { user, signOut } = useAuth();
@@ -15,6 +16,7 @@ export default function ProfileScreen({ onBack }: { onBack: () => void; onSignOu
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<Post | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [editTarget, setEditTarget] = useState<Post | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -138,13 +140,22 @@ export default function ProfileScreen({ onBack }: { onBack: () => void; onSignOu
                   ) : (
                     <img src={post.media_url} className="w-full h-full object-cover" alt={post.caption || ''} />
                   )}
-                  <button
-                    onClick={() => setDeleteTarget(post)}
-                    className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
-                    aria-label="Delete post"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
+                    <button
+                      onClick={() => setEditTarget(post)}
+                      className="w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition"
+                      aria-label="Edit post"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(post)}
+                      className="w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition"
+                      aria-label="Delete post"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -172,6 +183,19 @@ export default function ProfileScreen({ onBack }: { onBack: () => void; onSignOu
           )
         )}
       </div>
+
+      {editTarget && (
+        <EditPostModal
+          post={editTarget}
+          onSaved={({ caption, post_music }) => {
+            setPosts((prev) => prev.map((p) =>
+              p.id === editTarget.id ? { ...p, caption, post_music } : p
+            ));
+            setEditTarget(null);
+          }}
+          onClose={() => setEditTarget(null)}
+        />
+      )}
 
       {deleteTarget && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={() => setDeleteTarget(null)}>

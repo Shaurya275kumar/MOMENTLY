@@ -64,6 +64,11 @@ async function withCounts(posts: Post[] | null, userId: string): Promise<Post[]>
   }));
 }
 
+export async function updatePostCaption(postId: string, caption: string): Promise<void> {
+  const { error } = await supabase.from('posts').update({ caption }).eq('id', postId);
+  if (error) throw error;
+}
+
 export async function deletePost(postId: string): Promise<void> {
   const { error } = await supabase.from('posts').delete().eq('id', postId);
   if (error) throw error;
