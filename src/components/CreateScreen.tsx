@@ -4,7 +4,8 @@ import { useAuth } from '../lib/auth';
 import { uploadFile } from '../lib/upload';
 import { attachMusicToPost, type Song } from '../lib/music';
 import MusicPickerModal from './MusicPickerModal';
-import { Music2, X, Loader2, Image as ImageIcon, Camera, Disc3, Trash2 } from 'lucide-react';
+import { Music2, X, Loader2, Image as ImageIcon, Camera, Disc3, Trash2, Wand2, Sparkles, Focus, Maximize2 } from 'lucide-react';
+import { enhanceImage, deblurImage, upscaleImage, type EnhanceResult } from '../lib/imageEnhance';
 
 type Props = { onDone: () => void };
 
@@ -29,6 +30,12 @@ export default function CreateScreen({ onDone }: Props) {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const [filter, setFilter] = useState<string>('none');
+  const [enhanceMode, setEnhanceMode] = useState<string | null>(null);
+  const [enhanceBusy, setEnhanceBusy] = useState(false);
+  const [originalPreview, setOriginalPreview] = useState<string | null>(null);
+  const [enhanceError, setEnhanceError] = useState<string | null>(null);
+  const [enhanceResult, setEnhanceResult] = useState<EnhanceResult | null>(null);
+  const [originalFile, setOriginalFile] = useState<File | null>(null);
 
   const filters: { id: string; label: string; css: string }[] = [
     { id: 'none', label: 'Normal', css: 'none' },
@@ -129,8 +136,44 @@ export default function CreateScreen({ onDone }: Props) {
 
   const onPick = (f: File) => {
     setFile(f);
+    setOriginalFile(f);
     setMediaType(f.type.startsWith('video') ? 'reel' : 'image');
     setPreview(URL.createObjectURL(f));
+    setEnhanceMode(null);
+    setEnhanceResult(null);
+    setEnhanceError(null);
+    setOriginalPreview(null);
+  };
+
+  const applyEnhance = async (mode: 'enhance' | 'deblur' | 'upscale') => {
+    if (!preview || mediaType !== 'image') return;
+    const baseSrc = enhanceResult?.url || (originalPreview || preview);
+    if (!originalPreview) setOriginalPreview(preview);
+    setEnhanceBusy(true);
+    setEnhanceError(null);
+    setEnhanceMode(mode);
+    try {
+      let result: EnhanceResult;
+      if (mode === 'enhance') result = await enhanceImage(baseSrc);
+      else if (mode === 'deblur') result = await deblurImage(baseSrc);
+      else result = await upscaleImage(baseSrc, 2);
+      setEnhanceResult(result);
+      setPreview(result.url);
+      setFile(new File([result.blob], `enhanced-${Date.now()}.jpg`, { type: 'image/jpeg' }));
+    } catch {
+      setEnhanceError('Could not process this image. Try a different one.');
+      setEnhanceMode(null);
+    } finally {
+      setEnhanceBusy(false);
+    }
+  };
+
+  const resetEnhance = () => {
+    if (originalPreview) setPreview(originalPreview);
+    if (originalFile) setFile(originalFile);
+    setEnhanceMode(null);
+    setEnhanceResult(null);
+    setEnhanceError(null);
   };
 
   const publish = async () => {
@@ -235,6 +278,30 @@ export default function CreateScreen({ onDone }: Props) {
               </div>
               <textarea value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Write a caption…" rows={4} className="w-full text-sm focus:outline-none placeholder-[#8e8e8e] resize-none border-b border-[#dbdbdb] dark:border-[#262626] pb-3" />
 
+              {/* Enhancement tools — image only */}
+              {mediaType === 'image' && (
+                <div className="py-3 border-b border-[#dbdbdb] dark:border-[#262626]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Wand2 className="w-4 h-4 text-[#0095f6]" />
+                    <span className="text-xs font-semibold text-[#262626] dark:text-[#f5f5f5]">Enhance</span>
+                    {enhanceMode && (
+                      <button onClick={resetEnhance} className="ml-auto text-xs text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#ed4956] transition">Reset</button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <EnhanceBtn icon={Sparkles} label="Enhance" active={enhanceMode === 'enhance'} busy={enhanceBusy && enhanceMode === 'enhance'} onClick={() => applyEnhance('enhance')} />
+                    <EnhanceBtn icon={Focus} label="Deblur" active={enhanceMode === 'deblur'} busy={enhanceBusy && enhanceMode === 'deblur'} onClick={() => applyEnhance('deblur')} />
+                    <EnhanceBtn icon={Maximize2} label="Upscale 2x" active={enhanceMode === 'upscale'} busy={enhanceBusy && enhanceMode === 'upscale'} onClick={() => applyEnhance('upscale')} />
+                  </div>
+                  {enhanceError && <p className="text-xs text-[#ed4956] mt-2">{enhanceError}</p>}
+                  {enhanceResult && !enhanceError && (
+                    <p className="text-[10px] text-[#8e8e8e] dark:text-[#a8a8a8] mt-2">
+                      {enhanceResult.width}×{enhanceResult.height}px · applied
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Add Music row */}
               <div className="flex items-center gap-3 py-2.5 border-b border-[#dbdbdb] dark:border-[#262626]">
                 <button onClick={() => setShowMusic(true)} className="flex items-center gap-3 flex-1 min-w-0 hover:bg-[#fafafa] dark:hover:bg-[#0a0a0a] dark:bg-[#0a0a0a] transition text-left -m-1 p-1 rounded">
@@ -293,5 +360,18 @@ export default function CreateScreen({ onDone }: Props) {
         )}
       </div>
     </div>
+  );
+}
+
+function EnhanceBtn({ icon: Icon, label, active, busy, onClick }: { icon: React.ComponentType<{ className?: string }>; label: string; active: boolean; busy: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={busy}
+      className={`flex flex-col items-center gap-1.5 py-2.5 rounded-lg text-xs font-medium transition disabled:opacity-50 ${active ? 'bg-[#0095f6] text-white' : 'bg-[#f5f5f5] dark:bg-[#1a1a1a] text-[#262626] dark:text-[#f5f5f5] hover:bg-[#efefef] dark:hover:bg-[#262626]'}`}
+    >
+      {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Icon className="w-4 h-4" />}
+      {label}
+    </button>
   );
 }
