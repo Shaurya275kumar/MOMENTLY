@@ -56,10 +56,10 @@ export default function AdminMusicDashboard({ onBack }: Props) {
     <div className="max-w-[935px] mx-auto px-4 py-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <button onClick={onBack} className="text-sm text-[#8e8e8e] hover:text-[#262626] flex items-center gap-1">
+          <button onClick={onBack} className="text-sm text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#262626] dark:hover:text-[#f5f5f5] dark:text-[#f5f5f5] flex items-center gap-1">
             <X className="w-4 h-4" /> Back
           </button>
-          <h1 className="text-xl font-bold text-[#262626] flex items-center gap-2">
+          <h1 className="text-xl font-bold text-[#262626] dark:text-[#f5f5f5] flex items-center gap-2">
             <MusicIcon className="w-6 h-6 text-[#0095f6]" /> Music Admin
           </h1>
         </div>
@@ -72,12 +72,12 @@ export default function AdminMusicDashboard({ onBack }: Props) {
       </div>
 
       <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8e8e8e]" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8e8e8e] dark:text-[#a8a8a8]" />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search songs…"
-          className="w-full pl-10 pr-4 py-2.5 bg-[#efefef] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0095f6] transition"
+          className="w-full pl-10 pr-4 py-2.5 bg-[#efefef] dark:bg-[#262626] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0095f6] transition"
         />
       </div>
 
@@ -88,7 +88,7 @@ export default function AdminMusicDashboard({ onBack }: Props) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#dbdbdb] text-left text-xs text-[#8e8e8e] uppercase tracking-wide">
+              <tr className="border-b border-[#dbdbdb] dark:border-[#262626] text-left text-xs text-[#8e8e8e] dark:text-[#a8a8a8] uppercase tracking-wide">
                 <th className="py-2 pr-3">Song</th>
                 <th className="py-2 pr-3 hidden sm:table-cell">Genre</th>
                 <th className="py-2 pr-3 hidden md:table-cell">Duration</th>
@@ -99,19 +99,19 @@ export default function AdminMusicDashboard({ onBack }: Props) {
             </thead>
             <tbody>
               {songs.map((song) => (
-                <tr key={song.id} className="border-b border-[#efefef] hover:bg-[#fafafa] transition">
+                <tr key={song.id} className="border-b border-[#efefef] hover:bg-[#fafafa] dark:hover:bg-[#0a0a0a] dark:bg-[#0a0a0a] transition">
                   <td className="py-2.5 pr-3">
                     <div className="flex items-center gap-2.5">
                       <img src={song.artwork_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(song.title)}&background=0095f6&color=fff&size=80`} className="w-10 h-10 rounded-md object-cover flex-shrink-0" alt="" />
                       <div className="min-w-0">
-                        <p className="font-semibold text-[#262626] truncate">{song.title}</p>
-                        <p className="text-xs text-[#8e8e8e] truncate">{song.artist}</p>
+                        <p className="font-semibold text-[#262626] dark:text-[#f5f5f5] truncate">{song.title}</p>
+                        <p className="text-xs text-[#8e8e8e] dark:text-[#a8a8a8] truncate">{song.artist}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="py-2.5 pr-3 hidden sm:table-cell text-[#8e8e8e]">{song.genre || '—'}</td>
-                  <td className="py-2.5 pr-3 hidden md:table-cell text-[#8e8e8e] tabular-nums">{formatDuration(song.duration_sec)}</td>
-                  <td className="py-2.5 pr-3 hidden md:table-cell text-[#8e8e8e] tabular-nums">{song.play_count}</td>
+                  <td className="py-2.5 pr-3 hidden sm:table-cell text-[#8e8e8e] dark:text-[#a8a8a8]">{song.genre || '—'}</td>
+                  <td className="py-2.5 pr-3 hidden md:table-cell text-[#8e8e8e] dark:text-[#a8a8a8] tabular-nums">{formatDuration(song.duration_sec)}</td>
+                  <td className="py-2.5 pr-3 hidden md:table-cell text-[#8e8e8e] dark:text-[#a8a8a8] tabular-nums">{song.play_count}</td>
                   <td className="py-2.5 pr-3">
                     <button
                       onClick={() => handleToggle(song)}
@@ -122,13 +122,13 @@ export default function AdminMusicDashboard({ onBack }: Props) {
                   </td>
                   <td className="py-2.5 pr-3">
                     <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => { setEditing(song); setShowForm(true); }} className="p-1.5 rounded-lg hover:bg-[#efefef] text-[#8e8e8e] hover:text-[#262626] transition" aria-label="Edit">
+                      <button onClick={() => { setEditing(song); setShowForm(true); }} className="p-1.5 rounded-lg hover:bg-[#efefef] dark:hover:bg-[#262626] dark:bg-[#262626] text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#262626] dark:hover:text-[#f5f5f5] dark:text-[#f5f5f5] transition" aria-label="Edit">
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleToggle(song)} className="p-1.5 rounded-lg hover:bg-[#efefef] text-[#8e8e8e] hover:text-[#262626] transition" aria-label="Toggle">
+                      <button onClick={() => handleToggle(song)} className="p-1.5 rounded-lg hover:bg-[#efefef] dark:hover:bg-[#262626] dark:bg-[#262626] text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#262626] dark:hover:text-[#f5f5f5] dark:text-[#f5f5f5] transition" aria-label="Toggle">
                         <Power className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleDelete(song)} className="p-1.5 rounded-lg hover:bg-[#fef0f0] text-[#8e8e8e] hover:text-[#ed4956] transition" aria-label="Delete">
+                      <button onClick={() => handleDelete(song)} className="p-1.5 rounded-lg hover:bg-[#fef0f0] text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#ed4956] transition" aria-label="Delete">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -137,7 +137,7 @@ export default function AdminMusicDashboard({ onBack }: Props) {
               ))}
             </tbody>
           </table>
-          {songs.length === 0 && <p className="text-center text-sm text-[#8e8e8e] py-12">No songs found.</p>}
+          {songs.length === 0 && <p className="text-center text-sm text-[#8e8e8e] dark:text-[#a8a8a8] py-12">No songs found.</p>}
         </div>
       )}
 
@@ -237,10 +237,10 @@ function SongForm({ song, onClose, onSaved }: { song: Song | null; onClose: () =
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/70" />
-      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto mx-4" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[#dbdbdb] sticky top-0 bg-white z-10">
-          <h3 className="font-semibold text-sm text-[#262626]">{song ? 'Edit Song' : 'Add New Song'}</h3>
-          <button onClick={onClose} className="text-[#8e8e8e] hover:text-[#262626]"><X className="w-5 h-5" /></button>
+      <div className="relative bg-white dark:bg-[#121212] rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto mx-4" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#dbdbdb] dark:border-[#262626] sticky top-0 bg-white dark:bg-[#121212] z-10">
+          <h3 className="font-semibold text-sm text-[#262626] dark:text-[#f5f5f5]">{song ? 'Edit Song' : 'Add New Song'}</h3>
+          <button onClick={onClose} className="text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#262626] dark:hover:text-[#f5f5f5] dark:text-[#f5f5f5]"><X className="w-5 h-5" /></button>
         </div>
         <div className="p-5 space-y-4">
           <FormField label="Title" required>
@@ -288,12 +288,12 @@ function SongForm({ song, onClose, onSaved }: { song: Song | null; onClose: () =
           </FormField>
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} className="w-4 h-4 accent-[#0095f6]" />
-            <span className="text-sm text-[#262626]">Enabled (visible in library)</span>
+            <span className="text-sm text-[#262626] dark:text-[#f5f5f5]">Enabled (visible in library)</span>
           </label>
           {error && <p className="text-sm text-[#ed4956] flex items-center gap-1.5"><AlertCircle className="w-4 h-4" /> {error}</p>}
         </div>
-        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-[#dbdbdb] sticky bottom-0 bg-white">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-[#262626] hover:bg-[#efefef] rounded-lg transition">Cancel</button>
+        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-[#dbdbdb] dark:border-[#262626] sticky bottom-0 bg-white dark:bg-[#121212]">
+          <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-[#262626] dark:text-[#f5f5f5] hover:bg-[#efefef] dark:hover:bg-[#262626] dark:bg-[#262626] rounded-lg transition">Cancel</button>
           <button onClick={handleSubmit} disabled={busy} className="px-4 py-2 text-sm font-semibold bg-[#0095f6] hover:bg-[#1877f2] text-white rounded-lg transition disabled:opacity-50 flex items-center gap-2">
             {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             {song ? 'Save Changes' : 'Add Song'}
@@ -307,7 +307,7 @@ function SongForm({ song, onClose, onSaved }: { song: Song | null; onClose: () =
 function FormField({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-xs font-semibold text-[#262626] mb-1.5">{label}{required && <span className="text-[#ed4956]"> *</span>}</label>
+      <label className="block text-xs font-semibold text-[#262626] dark:text-[#f5f5f5] mb-1.5">{label}{required && <span className="text-[#ed4956]"> *</span>}</label>
       {children}
     </div>
   );

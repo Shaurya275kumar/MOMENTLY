@@ -53,23 +53,23 @@ export default function ExploreScreen({ onOpenProfile }: { onOpenProfile: (id: s
     <div className="max-w-[935px] mx-auto px-4 py-6">
       {/* Search bar */}
       <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8e8e8e]" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8e8e8e] dark:text-[#a8a8a8]" />
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search profiles by name or username…"
-          className="w-full pl-10 pr-10 py-2.5 bg-[#efefef] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0095f6] focus:bg-white transition placeholder-[#8e8e8e] text-[#262626]"
+          className="w-full pl-10 pr-10 py-2.5 bg-[#efefef] dark:bg-[#262626] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0095f6] focus:bg-white dark:bg-[#121212] transition placeholder-[#8e8e8e] text-[#262626] dark:text-[#f5f5f5]"
         />
         {query && (
-          <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8e8e8e] hover:text-[#262626]">
+          <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#262626] dark:hover:text-[#f5f5f5] dark:text-[#f5f5f5]">
             <X className="w-4 h-4" />
           </button>
         )}
       </div>
 
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-[#262626]">Discover people</h2>
+        <h2 className="text-lg font-semibold text-[#262626] dark:text-[#f5f5f5]">Discover people</h2>
         <span className="text-sm ig-gray">{filtered.length} {filtered.length === 1 ? 'profile' : 'profiles'}</span>
       </div>
 
@@ -84,7 +84,7 @@ export default function ExploreScreen({ onOpenProfile }: { onOpenProfile: (id: s
             const isMe = p.id === user?.id;
             const isFollowing = follows.has(p.id);
             return (
-              <div key={p.id} className="flex items-center gap-3 p-4 border border-[#dbdbdb] rounded-lg hover:bg-[#fafafa] transition">
+              <div key={p.id} className="flex items-center gap-3 p-4 border border-[#dbdbdb] dark:border-[#262626] rounded-lg hover:bg-[#fafafa] dark:hover:bg-[#0a0a0a] dark:bg-[#0a0a0a] transition">
                 <button onClick={() => onOpenProfile(p.id)} className="shrink-0">
                   <img
                     src={p.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.username)}&background=random`}
@@ -93,7 +93,7 @@ export default function ExploreScreen({ onOpenProfile }: { onOpenProfile: (id: s
                   />
                 </button>
                 <div className="flex-1 min-w-0">
-                  <button onClick={() => onOpenProfile(p.id)} className="text-sm font-semibold text-[#262626] hover:underline block truncate text-left">
+                  <button onClick={() => onOpenProfile(p.id)} className="text-sm font-semibold text-[#262626] dark:text-[#f5f5f5] hover:underline block truncate text-left">
                     {p.username}
                   </button>
                   <p className="text-xs ig-gray truncate">{p.full_name || 'No name set'}</p>
@@ -103,7 +103,7 @@ export default function ExploreScreen({ onOpenProfile }: { onOpenProfile: (id: s
                     onClick={() => toggleFollow(p.id)}
                     className={`text-xs font-semibold px-3 py-1.5 rounded-lg shrink-0 transition ${
                       isFollowing
-                        ? 'bg-[#efefef] text-[#262626] hover:bg-[#e0e0e0]'
+                        ? 'bg-[#efefef] dark:bg-[#262626] text-[#262626] dark:text-[#f5f5f5] hover:bg-[#e0e0e0] dark:hover:bg-[#333333] dark:bg-[#333333]'
                         : 'bg-[#0095f6] text-white hover:bg-[#1877f2]'
                     }`}
                   >

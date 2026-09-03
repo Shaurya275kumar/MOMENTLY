@@ -69,10 +69,10 @@ export default function CommentsDrawer({ postId, onClose }: { postId: string; on
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60" />
-      <div className="relative bg-white rounded-xl w-full max-w-md max-h-[80vh] flex flex-col shadow-2xl mx-4" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-center px-5 py-3 border-b border-[#dbdbdb] relative">
-          <h3 className="font-semibold text-sm text-[#262626]">Comments</h3>
-          <button onClick={onClose} className="absolute right-4 text-[#8e8e8e] hover:text-[#262626]"><X className="w-5 h-5" /></button>
+      <div className="relative bg-white dark:bg-[#121212] rounded-xl w-full max-w-md max-h-[80vh] flex flex-col shadow-2xl mx-4" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-center px-5 py-3 border-b border-[#dbdbdb] dark:border-[#262626] relative">
+          <h3 className="font-semibold text-sm text-[#262626] dark:text-[#f5f5f5]">Comments</h3>
+          <button onClick={onClose} className="absolute right-4 text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#262626] dark:hover:text-[#f5f5f5] dark:text-[#f5f5f5]"><X className="w-5 h-5" /></button>
         </div>
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
           {loading && <p className="text-sm ig-gray text-center py-8">Loading…</p>}
@@ -81,11 +81,11 @@ export default function CommentsDrawer({ postId, onClose }: { postId: string; on
             <div key={c.id} className="flex gap-3 group">
               <img src={c.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.profiles?.username || 'u')}&background=random`} className="w-8 h-8 rounded-full object-cover flex-shrink-0" alt="" />
               <div className="flex-1">
-                <p className="text-sm text-[#262626]"><span className="font-semibold mr-1.5">{c.profiles?.username}</span>{c.body}</p>
+                <p className="text-sm text-[#262626] dark:text-[#f5f5f5]"><span className="font-semibold mr-1.5">{c.profiles?.username}</span>{c.body}</p>
                 <p className="text-[10px] ig-gray mt-0.5 uppercase tracking-wide">{timeAgo(c.created_at)}</p>
               </div>
               {user?.id === c.user_id && (
-                <button onClick={() => remove(c.id)} className="opacity-0 group-hover:opacity-100 transition text-[#8e8e8e] hover:text-[#ed4956]">
+                <button onClick={() => remove(c.id)} className="opacity-0 group-hover:opacity-100 transition text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#ed4956]">
                   <X className="w-4 h-4" />
                 </button>
               )}
@@ -93,7 +93,7 @@ export default function CommentsDrawer({ postId, onClose }: { postId: string; on
           ))}
         </div>
         {error && <p className="text-xs text-[#ed4956] px-4 pt-2">{error}</p>}
-        <div className="px-4 py-3 border-t border-[#dbdbdb] flex gap-2 items-center">
+        <div className="px-4 py-3 border-t border-[#dbdbdb] dark:border-[#262626] flex gap-2 items-center">
           <input
             value={body}
             onChange={(e) => setBody(e.target.value)}

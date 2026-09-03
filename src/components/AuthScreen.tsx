@@ -32,10 +32,10 @@ export default function AuthScreen() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#fafafa] px-4 py-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#fafafa] dark:bg-[#0a0a0a] px-4 py-8">
       <div className="w-full max-w-[350px]">
-        <div className="bg-white border border-[#dbdbdb] rounded-md px-10 py-8 flex flex-col items-center">
-          <h1 className="font-logo text-5xl text-[#262626] mb-8">Momently</h1>
+        <div className="bg-white dark:bg-[#121212] border border-[#dbdbdb] dark:border-[#262626] rounded-md px-10 py-8 flex flex-col items-center">
+          <h1 className="font-logo text-5xl text-[#262626] dark:text-[#f5f5f5] mb-8">Momently</h1>
 
           <form onSubmit={submit} className="w-full flex flex-col gap-1.5">
             {mode === 'signup' && (
@@ -56,7 +56,7 @@ export default function AuthScreen() {
           {error && <p className="text-xs text-[#ed4956] mt-3 text-center">{error}</p>}
         </div>
 
-        <div className="bg-white border border-[#dbdbdb] rounded-md mt-2.5 px-10 py-5 text-center text-sm">
+        <div className="bg-white dark:bg-[#121212] border border-[#dbdbdb] dark:border-[#262626] rounded-md mt-2.5 px-10 py-5 text-center text-sm">
           {mode === 'signin' ? "Don't have an account?" : 'Have an account?'}{' '}
           <button onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(null); }} className="text-[#0095f6] font-semibold hover:underline">
             {mode === 'signin' ? 'Sign up' : 'Log in'}

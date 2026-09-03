@@ -40,10 +40,10 @@ export default function CreateStoryModal({ onClose, onCreated }: Props) {
   return (
     <div className="fixed inset-0 z-[65] flex items-center justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/80" />
-      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[#dbdbdb]">
-          <button onClick={onClose} className="text-sm ig-gray hover:text-[#262626]">Cancel</button>
-          <h2 className="text-sm font-semibold text-[#262626]">Add to your story</h2>
+      <div className="relative bg-white dark:bg-[#121212] rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#dbdbdb] dark:border-[#262626]">
+          <button onClick={onClose} className="text-sm ig-gray hover:text-[#262626] dark:hover:text-[#f5f5f5] dark:text-[#f5f5f5]">Cancel</button>
+          <h2 className="text-sm font-semibold text-[#262626] dark:text-[#f5f5f5]">Add to your story</h2>
           <span className="w-12" />
         </div>
 
@@ -51,13 +51,13 @@ export default function CreateStoryModal({ onClose, onCreated }: Props) {
           <div className="py-14 px-6 flex flex-col items-center gap-4">
             <p className="text-sm ig-gray text-center">Share a photo or video. It disappears after 24 hours.</p>
             <div className="flex gap-3">
-              <button onClick={() => fileRef.current?.click()} className="flex flex-col items-center gap-2 px-5 py-4 rounded-xl bg-[#fafafa] hover:bg-[#f0f0f0] transition">
-                <ImageIcon className="w-7 h-7 text-[#262626]" />
-                <span className="text-xs font-semibold text-[#262626]">Upload</span>
+              <button onClick={() => fileRef.current?.click()} className="flex flex-col items-center gap-2 px-5 py-4 rounded-xl bg-[#fafafa] dark:bg-[#0a0a0a] hover:bg-[#f0f0f0] dark:bg-[#1a1a1a] transition">
+                <ImageIcon className="w-7 h-7 text-[#262626] dark:text-[#f5f5f5]" />
+                <span className="text-xs font-semibold text-[#262626] dark:text-[#f5f5f5]">Upload</span>
               </button>
-              <button onClick={() => fileRef.current?.click()} className="flex flex-col items-center gap-2 px-5 py-4 rounded-xl bg-[#fafafa] hover:bg-[#f0f0f0] transition">
-                <Camera className="w-7 h-7 text-[#262626]" />
-                <span className="text-xs font-semibold text-[#262626]">Photo/Video</span>
+              <button onClick={() => fileRef.current?.click()} className="flex flex-col items-center gap-2 px-5 py-4 rounded-xl bg-[#fafafa] dark:bg-[#0a0a0a] hover:bg-[#f0f0f0] dark:bg-[#1a1a1a] transition">
+                <Camera className="w-7 h-7 text-[#262626] dark:text-[#f5f5f5]" />
+                <span className="text-xs font-semibold text-[#262626] dark:text-[#f5f5f5]">Photo/Video</span>
               </button>
             </div>
             <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden"

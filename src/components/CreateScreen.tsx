@@ -160,22 +160,22 @@ export default function CreateScreen({ onDone }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onDone}>
       <div className="absolute inset-0 bg-black/70" />
-      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#dbdbdb]">
-          <button onClick={onDone} className="text-sm ig-gray hover:text-[#262626]">Cancel</button>
-          <h2 className="text-sm font-semibold text-[#262626]">Create new post</h2>
+      <div className="relative bg-white dark:bg-[#121212] rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#dbdbdb] dark:border-[#262626]">
+          <button onClick={onDone} className="text-sm ig-gray hover:text-[#262626] dark:hover:text-[#f5f5f5] dark:text-[#f5f5f5]">Cancel</button>
+          <h2 className="text-sm font-semibold text-[#262626] dark:text-[#f5f5f5]">Create new post</h2>
           {preview ? <button onClick={publish} disabled={busy} className="text-sm font-semibold text-[#0095f6] disabled:opacity-40">{busy ? 'Uploading…' : 'Share'}</button> : <span className="w-10" />}
         </div>
 
         {!preview && (
-          <div className="flex border-b border-[#dbdbdb]">
-            <button onClick={() => setMode('upload')} className={`flex-1 py-2 text-sm font-medium ${mode === 'upload' ? 'font-bold text-[#262626] border-b-2 border-[#262626] -mb-px' : 'ig-gray'}`}>Upload</button>
-            <button onClick={startCamera} className={`flex-1 py-2 text-sm font-medium ${mode === 'camera' ? 'font-bold text-[#262626] border-b-2 border-[#262626] -mb-px' : 'ig-gray'}`}>Camera</button>
+          <div className="flex border-b border-[#dbdbdb] dark:border-[#262626]">
+            <button onClick={() => setMode('upload')} className={`flex-1 py-2 text-sm font-medium ${mode === 'upload' ? 'font-bold text-[#262626] dark:text-[#f5f5f5] border-b-2 border-[#262626] -mb-px' : 'ig-gray'}`}>Upload</button>
+            <button onClick={startCamera} className={`flex-1 py-2 text-sm font-medium ${mode === 'camera' ? 'font-bold text-[#262626] dark:text-[#f5f5f5] border-b-2 border-[#262626] -mb-px' : 'ig-gray'}`}>Camera</button>
           </div>
         )}
 
         {!preview && mode === 'upload' && (
-          <div onClick={() => fileRef.current?.click()} className="py-20 flex flex-col items-center gap-3 ig-gray hover:text-[#262626] transition cursor-pointer">
+          <div onClick={() => fileRef.current?.click()} className="py-20 flex flex-col items-center gap-3 ig-gray hover:text-[#262626] dark:hover:text-[#f5f5f5] dark:text-[#f5f5f5] transition cursor-pointer">
             <ImageIcon className="w-16 h-16" strokeWidth={1} />
             <p className="text-lg font-light">Drag photos and videos here</p>
             <p className="text-sm">Or click to choose from your device</p>
@@ -188,27 +188,27 @@ export default function CreateScreen({ onDone }: Props) {
             <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" style={{ filter: activeFilter.css }} />
             <div className="absolute inset-x-0 bottom-20 flex gap-2 overflow-x-auto px-3 pb-1 no-scrollbar">
               {filters.map((f) => (
-                <button key={f.id} onClick={() => setFilter(f.id)} className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition ${filter === f.id ? 'bg-white text-[#262626]' : 'bg-black/40 text-white'}`}>{f.label}</button>
+                <button key={f.id} onClick={() => setFilter(f.id)} className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition ${filter === f.id ? 'bg-white dark:bg-[#121212] text-[#262626] dark:text-[#f5f5f5]' : 'bg-black/40 text-white'}`}>{f.label}</button>
               ))}
             </div>
             <div className="absolute inset-x-0 bottom-4 flex justify-center items-center gap-6">
               {!recording ? (
                 <>
-                  <button onClick={capturePhoto} className="w-12 h-12 rounded-full bg-white/80 flex items-center justify-center shadow-md" aria-label="Capture photo">
-                    <Camera className="w-6 h-6 text-[#262626]" />
+                  <button onClick={capturePhoto} className="w-12 h-12 rounded-full bg-white dark:bg-[#121212]/80 flex items-center justify-center shadow-md" aria-label="Capture photo">
+                    <Camera className="w-6 h-6 text-[#262626] dark:text-[#f5f5f5]" />
                   </button>
-                  <button onClick={startRecording} className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                    <span className="w-12 h-12 rounded-full bg-[#ed4956] border-2 border-white" />
+                  <button onClick={startRecording} className="w-16 h-16 rounded-full bg-white dark:bg-[#121212]/90 flex items-center justify-center shadow-lg">
+                    <span className="w-12 h-12 rounded-full bg-[#ed4956] border-2 border-white dark:border-[#1a1a1a]" />
                   </button>
                 </>
               ) : (
                 <button onClick={stopRecording} className="w-16 h-16 rounded-full bg-[#ed4956] flex items-center justify-center shadow-lg">
-                  <span className="w-4 h-4 bg-white rounded-sm" />
+                  <span className="w-4 h-4 bg-white dark:bg-[#121212] rounded-sm" />
                 </button>
               )}
             </div>
             <button onClick={stopCamera} className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/40 text-white flex items-center justify-center"><X className="w-5 h-5" /></button>
-            {recording && <div className="absolute top-3 left-3 px-2 py-1 rounded-full bg-[#ed4956] text-white text-xs font-semibold flex items-center gap-1.5"><span className="w-2 h-2 bg-white rounded-full animate-pulse" /> REC</div>}
+            {recording && <div className="absolute top-3 left-3 px-2 py-1 rounded-full bg-[#ed4956] text-white text-xs font-semibold flex items-center gap-1.5"><span className="w-2 h-2 bg-white dark:bg-[#121212] rounded-full animate-pulse" /> REC</div>}
           </div>
         )}
 
@@ -231,23 +231,23 @@ export default function CreateScreen({ onDone }: Props) {
             <div className="md:w-[340px] flex-shrink-0 p-4 space-y-3">
               <div className="flex items-center gap-2.5 mb-2">
                 <img src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.username || 'me')}&background=random`} className="w-7 h-7 rounded-full object-cover" alt="" />
-                <span className="text-sm font-semibold text-[#262626]">{profile?.username}</span>
+                <span className="text-sm font-semibold text-[#262626] dark:text-[#f5f5f5]">{profile?.username}</span>
               </div>
-              <textarea value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Write a caption…" rows={4} className="w-full text-sm focus:outline-none placeholder-[#8e8e8e] resize-none border-b border-[#dbdbdb] pb-3" />
+              <textarea value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Write a caption…" rows={4} className="w-full text-sm focus:outline-none placeholder-[#8e8e8e] resize-none border-b border-[#dbdbdb] dark:border-[#262626] pb-3" />
 
               {/* Add Music row */}
-              <div className="flex items-center gap-3 py-2.5 border-b border-[#dbdbdb]">
-                <button onClick={() => setShowMusic(true)} className="flex items-center gap-3 flex-1 min-w-0 hover:bg-[#fafafa] transition text-left -m-1 p-1 rounded">
-                  <Music2 className="w-5 h-5 text-[#262626] flex-shrink-0" />
+              <div className="flex items-center gap-3 py-2.5 border-b border-[#dbdbdb] dark:border-[#262626]">
+                <button onClick={() => setShowMusic(true)} className="flex items-center gap-3 flex-1 min-w-0 hover:bg-[#fafafa] dark:hover:bg-[#0a0a0a] dark:bg-[#0a0a0a] transition text-left -m-1 p-1 rounded">
+                  <Music2 className="w-5 h-5 text-[#262626] dark:text-[#f5f5f5] flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-[#262626]">{selectedSong ? selectedSong.title : 'Add music'}</p>
+                    <p className="text-sm font-medium text-[#262626] dark:text-[#f5f5f5]">{selectedSong ? selectedSong.title : 'Add music'}</p>
                     <p className="text-xs ig-gray">{selectedSong ? selectedSong.artist : 'Choose a track'}</p>
                   </div>
                 </button>
                 {selectedSong && (
                   <button
                     onClick={() => setSelectedSong(null)}
-                    className="p-1 text-[#8e8e8e] hover:text-[#ed4956] transition flex-shrink-0"
+                    className="p-1 text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#ed4956] transition flex-shrink-0"
                     aria-label="Remove music"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -257,13 +257,13 @@ export default function CreateScreen({ onDone }: Props) {
 
               {/* Selected song preview card */}
               {selectedSong && (
-                <div className="flex items-center gap-2.5 p-2.5 bg-[#fafafa] rounded-lg animate-slide-up">
+                <div className="flex items-center gap-2.5 p-2.5 bg-[#fafafa] dark:bg-[#0a0a0a] rounded-lg animate-slide-up">
                   <img src={selectedSong.artwork_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedSong.title)}&background=0095f6&color=fff&size=80`} className="w-10 h-10 rounded-md object-cover" alt="" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-[#262626] truncate">{selectedSong.title}</p>
+                    <p className="text-xs font-semibold text-[#262626] dark:text-[#f5f5f5] truncate">{selectedSong.title}</p>
                     <p className="text-[10px] ig-gray truncate">{selectedSong.artist} · {musicDuration}s clip</p>
                   </div>
-                  <Disc3 className="w-4 h-4 text-[#8e8e8e] flex-shrink-0" />
+                  <Disc3 className="w-4 h-4 text-[#8e8e8e] dark:text-[#a8a8a8] flex-shrink-0" />
                   <button onClick={() => setShowMusic(true)} className="text-xs font-semibold text-[#0095f6] hover:underline">Edit</button>
                 </div>
               )}

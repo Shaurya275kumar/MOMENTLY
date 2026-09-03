@@ -68,7 +68,7 @@ export default function ProfileScreen({ onBack }: { onBack: () => void; onSignOu
 
   return (
     <div className="max-w-[935px] mx-auto px-4 py-8">
-      <button onClick={onBack} className="text-sm ig-gray mb-4 hover:text-[#262626]">← Back</button>
+      <button onClick={onBack} className="text-sm ig-gray mb-4 hover:text-[#262626] dark:hover:text-[#f5f5f5] dark:text-[#f5f5f5]">← Back</button>
       <div className="flex items-start gap-8 mb-8">
         <div className="relative shrink-0">
           <img src={profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username)}&background=random`} className="w-24 h-24 rounded-full object-cover" alt="" />
@@ -88,39 +88,39 @@ export default function ProfileScreen({ onBack }: { onBack: () => void; onSignOu
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-3">
-            <h1 className="text-xl font-light text-[#262626]">{profile.username}</h1>
+            <h1 className="text-xl font-light text-[#262626] dark:text-[#f5f5f5]">{profile.username}</h1>
             {!editing ? (
-              <button onClick={() => setEditing(true)} className="px-4 py-1.5 text-sm font-semibold bg-[#efefef] hover:bg-[#e0e0e0] rounded-lg">Edit profile</button>
+              <button onClick={() => setEditing(true)} className="px-4 py-1.5 text-sm font-semibold bg-[#efefef] dark:bg-[#262626] hover:bg-[#e0e0e0] dark:hover:bg-[#333333] dark:bg-[#333333] rounded-lg">Edit profile</button>
             ) : (
               <button onClick={() => setEditing(false)} className="px-4 py-1.5 text-sm font-semibold bg-[#0095f6] text-white rounded-lg">Done</button>
             )}
             <button
               onClick={() => signOut()}
-              className="px-4 py-1.5 text-sm font-semibold text-[#ed4956] hover:bg-[#efefef] rounded-lg flex items-center gap-1.5"
+              className="px-4 py-1.5 text-sm font-semibold text-[#ed4956] hover:bg-[#efefef] dark:hover:bg-[#262626] dark:bg-[#262626] rounded-lg flex items-center gap-1.5"
             >
               <LogOut className="w-4 h-4" /> Log out
             </button>
           </div>
           <div className="flex gap-6 mb-3 text-sm">
-            <span><b className="text-[#262626]">{posts.length}</b> <span className="ig-gray">posts</span></span>
+            <span><b className="text-[#262626] dark:text-[#f5f5f5]">{posts.length}</b> <span className="ig-gray">posts</span></span>
           </div>
-          <p className="text-sm text-[#262626] font-semibold">{profile.full_name || ''}</p>
+          <p className="text-sm text-[#262626] dark:text-[#f5f5f5] font-semibold">{profile.full_name || ''}</p>
           <p className="text-sm ig-gray">{profile.bio || 'No bio yet'}</p>
         </div>
       </div>
       {editing && <EditForm profile={profile} onSaved={setProfile} />}
 
-      <div className="border-t border-[#dbdbdb]">
+      <div className="border-t border-[#dbdbdb] dark:border-[#262626]">
         <div className="flex justify-center gap-12 mb-2">
           <button
             onClick={() => setTab('posts')}
-            className={`flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide py-3 ${tab === 'posts' ? 'text-[#262626] border-t border-[#262626] -mt-px' : 'ig-gray'}`}
+            className={`flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide py-3 ${tab === 'posts' ? 'text-[#262626] dark:text-[#f5f5f5] border-t border-[#262626] -mt-px' : 'ig-gray'}`}
           >
             <Grid3x3 className="w-4 h-4" /> Posts
           </button>
           <button
             onClick={() => setTab('saved')}
-            className={`flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide py-3 ${tab === 'saved' ? 'text-[#262626] border-t border-[#262626] -mt-px' : 'ig-gray'}`}
+            className={`flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide py-3 ${tab === 'saved' ? 'text-[#262626] dark:text-[#f5f5f5] border-t border-[#262626] -mt-px' : 'ig-gray'}`}
           >
             <Bookmark className="w-4 h-4" /> Saved
           </button>
@@ -132,7 +132,7 @@ export default function ProfileScreen({ onBack }: { onBack: () => void; onSignOu
           ) : (
             <div className="grid grid-cols-3 gap-1">
               {posts.map((post) => (
-                <div key={post.id} className="relative aspect-square bg-[#fafafa] overflow-hidden group">
+                <div key={post.id} className="relative aspect-square bg-[#fafafa] dark:bg-[#0a0a0a] overflow-hidden group">
                   {post.media_type === 'reel' ? (
                     <video src={post.media_url} poster={post.thumbnail_url || undefined} className="w-full h-full object-cover" muted />
                   ) : (
@@ -160,7 +160,7 @@ export default function ProfileScreen({ onBack }: { onBack: () => void; onSignOu
           ) : (
             <div className="grid grid-cols-3 gap-1">
               {savedPosts.map((post) => (
-                <div key={post.id} className="relative aspect-square bg-[#fafafa] overflow-hidden">
+                <div key={post.id} className="relative aspect-square bg-[#fafafa] dark:bg-[#0a0a0a] overflow-hidden">
                   {post.media_type === 'reel' ? (
                     <video src={post.media_url} poster={post.thumbnail_url || undefined} className="w-full h-full object-cover" muted />
                   ) : (
@@ -176,18 +176,18 @@ export default function ProfileScreen({ onBack }: { onBack: () => void; onSignOu
       {deleteTarget && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={() => setDeleteTarget(null)}>
           <div className="absolute inset-0 bg-black/70" />
-          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          <div className="relative bg-white dark:bg-[#121212] rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="px-6 py-5 text-center">
-              <h3 className="text-lg font-semibold text-[#262626] mb-1">Delete post?</h3>
+              <h3 className="text-lg font-semibold text-[#262626] dark:text-[#f5f5f5] mb-1">Delete post?</h3>
               <p className="text-sm ig-gray">This post will be permanently removed. This can't be undone.</p>
             </div>
-            <div className="border-t border-[#dbdbdb]">
-              <button onClick={confirmDelete} disabled={deleting} className="w-full py-3 text-sm font-semibold text-[#ed4956] hover:bg-[#fafafa] disabled:opacity-50 flex items-center justify-center gap-2">
+            <div className="border-t border-[#dbdbdb] dark:border-[#262626]">
+              <button onClick={confirmDelete} disabled={deleting} className="w-full py-3 text-sm font-semibold text-[#ed4956] hover:bg-[#fafafa] dark:hover:bg-[#0a0a0a] dark:bg-[#0a0a0a] disabled:opacity-50 flex items-center justify-center gap-2">
                 {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Delete'}
               </button>
             </div>
-            <div className="border-t border-[#dbdbdb]">
-              <button onClick={() => setDeleteTarget(null)} className="w-full py-3 text-sm font-semibold text-[#262626] hover:bg-[#fafafa]">Cancel</button>
+            <div className="border-t border-[#dbdbdb] dark:border-[#262626]">
+              <button onClick={() => setDeleteTarget(null)} className="w-full py-3 text-sm font-semibold text-[#262626] dark:text-[#f5f5f5] hover:bg-[#fafafa] dark:hover:bg-[#0a0a0a] dark:bg-[#0a0a0a]">Cancel</button>
             </div>
           </div>
         </div>
@@ -217,7 +217,7 @@ function EditForm({ profile, onSaved }: { profile: Profile; onSaved: (p: Profile
   };
 
   return (
-    <div className="border-t border-[#dbdbdb] pt-6 space-y-4 max-w-md">
+    <div className="border-t border-[#dbdbdb] dark:border-[#262626] pt-6 space-y-4 max-w-md">
       <Field label="Username"><input value={username} onChange={(e) => setUsername(e.target.value)} className="ig-input py-2" /></Field>
       <Field label="Name"><input value={full_name} onChange={(e) => setFullName(e.target.value)} className="ig-input py-2" /></Field>
       <Field label="Bio"><textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} className="ig-input py-2 resize-none" /></Field>

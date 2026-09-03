@@ -149,13 +149,13 @@ export default function AudioPlayer({ song, startTime = 0, clipDuration = null, 
   }
 
   return (
-    <div className={`bg-white rounded-2xl border border-[#dbdbdb] p-4 sm:p-5 ${className}`}>
+    <div className={`bg-white dark:bg-[#121212] rounded-2xl border border-[#dbdbdb] dark:border-[#262626] p-4 sm:p-5 ${className}`}>
       <audio ref={audioRef} src={song.preview_url} preload="metadata" />
       <div className="flex items-center gap-4">
         <div className="relative flex-shrink-0">
           <img
             src={song.artwork_url || fallbackArt(song)}
-            className={`w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover bg-[#f2f2f2] ${state === 'playing' ? 'animate-[pulse_3s_ease-in-out_infinite]' : ''}`}
+            className={`w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover bg-[#f2f2f2] dark:bg-[#1a1a1a] ${state === 'playing' ? 'animate-[pulse_3s_ease-in-out_infinite]' : ''}`}
             alt={song.title}
           />
           <button
@@ -177,13 +177,13 @@ export default function AudioPlayer({ song, startTime = 0, clipDuration = null, 
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-[#262626] truncate">{song.title}</p>
-          <p className="text-xs text-[#8e8e8e] truncate">{song.artist}</p>
-          {song.album && <p className="text-xs text-[#8e8e8e] truncate">{song.album}</p>}
+          <p className="text-sm font-semibold text-[#262626] dark:text-[#f5f5f5] truncate">{song.title}</p>
+          <p className="text-xs text-[#8e8e8e] dark:text-[#a8a8a8] truncate">{song.artist}</p>
+          {song.album && <p className="text-xs text-[#8e8e8e] dark:text-[#a8a8a8] truncate">{song.album}</p>}
         </div>
 
         <div className="hidden sm:flex items-center gap-2">
-          <button onClick={() => setMuted(!muted)} className="text-[#8e8e8e] hover:text-[#262626] transition" aria-label="Mute">
+          <button onClick={() => setMuted(!muted)} className="text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#262626] dark:hover:text-[#f5f5f5] dark:text-[#f5f5f5] transition" aria-label="Mute">
             {muted || volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
           </button>
           <input
@@ -200,17 +200,17 @@ export default function AudioPlayer({ song, startTime = 0, clipDuration = null, 
       </div>
 
       <div className="mt-3 flex items-center gap-3">
-        <span className="text-xs text-[#8e8e8e] tabular-nums w-10 text-right">{formatDuration(displayTime)}</span>
+        <span className="text-xs text-[#8e8e8e] dark:text-[#a8a8a8] tabular-nums w-10 text-right">{formatDuration(displayTime)}</span>
         <div
           ref={progressRef}
           onClick={(e) => seek(e.clientX)}
-          className="flex-1 h-1.5 bg-[#efefef] rounded-full cursor-pointer group relative"
+          className="flex-1 h-1.5 bg-[#efefef] dark:bg-[#262626] rounded-full cursor-pointer group relative"
         >
           <div className="absolute inset-y-0 left-0 bg-[#0095f6] rounded-full transition-[width] duration-150" style={{ width: `${progressPercent}%` }}>
             <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-[#0095f6] rounded-full opacity-0 group-hover:opacity-100 transition shadow" />
           </div>
         </div>
-        <span className="text-xs text-[#8e8e8e] tabular-nums w-10">{formatDuration(effectiveDuration)}</span>
+        <span className="text-xs text-[#8e8e8e] dark:text-[#a8a8a8] tabular-nums w-10">{formatDuration(effectiveDuration)}</span>
       </div>
 
       {state === 'error' && (
@@ -220,7 +220,7 @@ export default function AudioPlayer({ song, startTime = 0, clipDuration = null, 
       )}
 
       {song.source && (
-        <p className="mt-2 text-[10px] text-[#8e8e8e] uppercase tracking-wide">Source: {song.source}</p>
+        <p className="mt-2 text-[10px] text-[#8e8e8e] dark:text-[#a8a8a8] uppercase tracking-wide">Source: {song.source}</p>
       )}
     </div>
   );
@@ -279,17 +279,17 @@ function CompactPlayer({
       </button>
       <img src={song.artwork_url || fallbackArt(song)} className="w-9 h-9 rounded-md object-cover flex-shrink-0" alt="" />
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold text-[#262626] truncate">{song.title}</p>
-        <p className="text-[10px] text-[#8e8e8e] truncate">{song.artist}</p>
+        <p className="text-xs font-semibold text-[#262626] dark:text-[#f5f5f5] truncate">{song.title}</p>
+        <p className="text-[10px] text-[#8e8e8e] dark:text-[#a8a8a8] truncate">{song.artist}</p>
       </div>
       <div className="hidden sm:flex items-center gap-2 w-32">
-        <span className="text-[10px] text-[#8e8e8e] tabular-nums">{formatDuration(displayTime)}</span>
-        <div ref={progressRef} onClick={(e) => onSeek(e.clientX)} className="flex-1 h-1 bg-[#efefef] rounded-full cursor-pointer relative">
+        <span className="text-[10px] text-[#8e8e8e] dark:text-[#a8a8a8] tabular-nums">{formatDuration(displayTime)}</span>
+        <div ref={progressRef} onClick={(e) => onSeek(e.clientX)} className="flex-1 h-1 bg-[#efefef] dark:bg-[#262626] rounded-full cursor-pointer relative">
           <div className="absolute inset-y-0 left-0 bg-[#0095f6] rounded-full" style={{ width: `${progressPercent}%` }} />
         </div>
-        <span className="text-[10px] text-[#8e8e8e] tabular-nums">{formatDuration(effectiveDuration)}</span>
+        <span className="text-[10px] text-[#8e8e8e] dark:text-[#a8a8a8] tabular-nums">{formatDuration(effectiveDuration)}</span>
       </div>
-      <button onClick={onToggleMute} className="hidden sm:flex text-[#8e8e8e] hover:text-[#262626] transition" aria-label="Mute">
+      <button onClick={onToggleMute} className="hidden sm:flex text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#262626] dark:hover:text-[#f5f5f5] dark:text-[#f5f5f5] transition" aria-label="Mute">
         {muted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
       </button>
       <input
@@ -303,7 +303,7 @@ function CompactPlayer({
         aria-label="Volume"
       />
       {onClose && (
-        <button onClick={onClose} className="text-[#8e8e8e] hover:text-[#262626] transition flex-shrink-0" aria-label="Close player">
+        <button onClick={onClose} className="text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#262626] dark:hover:text-[#f5f5f5] dark:text-[#f5f5f5] transition flex-shrink-0" aria-label="Close player">
           <X className="w-4 h-4" />
         </button>
       )}

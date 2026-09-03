@@ -20,7 +20,7 @@ export function MomentlyWordmark({ className = '' }: { className?: string }) {
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <MomentlyMark className="w-7 h-7" />
-      <span className="font-logo text-2xl text-[#262626] leading-none tracking-tight">Momently</span>
+      <span className="font-logo text-2xl text-[#262626] dark:text-[#f5f5f5] leading-none tracking-tight">Momently</span>
     </div>
   );
 }

@@ -55,7 +55,7 @@ export default function ActivityScreen({ onOpenProfile }: { onOpenProfile: (id: 
 
   return (
     <div className="max-w-[600px] mx-auto px-4 py-6">
-      <h2 className="text-lg font-semibold text-[#262626] mb-4">Activity</h2>
+      <h2 className="text-lg font-semibold text-[#262626] dark:text-[#f5f5f5] mb-4">Activity</h2>
 
       {notifications.length === 0 ? (
         <div className="text-center py-20">
@@ -67,7 +67,7 @@ export default function ActivityScreen({ onOpenProfile }: { onOpenProfile: (id: 
           {notifications.map((n) => (
             <div
               key={n.id}
-              className={`flex items-center gap-3 p-3 rounded-lg transition animate-slide-up ${!n.read_at ? 'bg-[#0095f6]/5' : 'hover:bg-[#fafafa]'}`}
+              className={`flex items-center gap-3 p-3 rounded-lg transition animate-slide-up ${!n.read_at ? 'bg-[#0095f6]/5' : 'hover:bg-[#fafafa] dark:hover:bg-[#0a0a0a] dark:bg-[#0a0a0a]'}`}
             >
               <div className="relative shrink-0">
                 <img
@@ -83,7 +83,7 @@ export default function ActivityScreen({ onOpenProfile }: { onOpenProfile: (id: 
               </div>
 
               <button onClick={() => onOpenProfile(n.actor_id)} className="flex-1 text-left min-w-0">
-                <p className="text-sm text-[#262626]">
+                <p className="text-sm text-[#262626] dark:text-[#f5f5f5]">
                   <span className="font-semibold">{n.actor.username}</span>{' '}
                   {n.type === 'like' && 'liked your post.'}
                   {n.type === 'comment' && `commented: "${n.body || ''}"`}
@@ -139,7 +139,7 @@ function FollowButton({ actorId }: { actorId: string }) {
     <button
       onClick={toggle}
       className={`text-xs font-semibold px-3 py-1.5 rounded-lg shrink-0 transition ${
-        following ? 'bg-[#efefef] text-[#262626]' : 'bg-[#0095f6] text-white'
+        following ? 'bg-[#efefef] dark:bg-[#262626] text-[#262626] dark:text-[#f5f5f5]' : 'bg-[#0095f6] text-white'
       }`}
     >
       {following ? 'Following' : 'Follow'}

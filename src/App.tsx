@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from './lib/auth';
+import { useTheme } from './lib/theme';
 import { supabase, type Post, type Profile } from './lib/supabase';
 import { getProfile } from './lib/profile';
 import { fetchUserPosts } from './lib/posts';
@@ -18,7 +19,7 @@ import MusicLibraryScreen from './components/MusicLibraryScreen';
 import SongDetailScreen from './components/SongDetailScreen';
 import AdminMusicDashboard from './components/AdminMusicDashboard';
 import { MomentlyWordmark, MomentlyMark } from './components/Logo';
-import { Loader2, Home, Clapperboard, PlusSquare, MessageCircle, User, LogOut, ArrowLeft, MessageSquare, Compass, Bell, X, Music as MusicIcon, Shield } from 'lucide-react';
+import { Loader2, Home, Clapperboard, PlusSquare, MessageCircle, User, LogOut, ArrowLeft, MessageSquare, Compass, Bell, X, Music as MusicIcon, Shield, Sun, Moon } from 'lucide-react';
 
 type Tab = 'home' | 'reels' | 'create' | 'chat' | 'profile' | 'explore' | 'activity' | 'music' | 'song' | 'admin';
 
@@ -34,6 +35,7 @@ const NAV_ITEMS: { id: Tab; icon: typeof Home; label: string }[] = [
 
 export default function App() {
   const { user, loading, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [tab, setTab] = useState<Tab>('home');
   const [profileId, setProfileId] = useState<string | null>(null);
   const [chatWith, setChatWith] = useState<string | null>(null);
@@ -45,7 +47,7 @@ export default function App() {
     if (user) checkIsAdmin(user.id).then(setIsAdmin);
   }, [user]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-[#0095f6]" /></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#fafafa] dark:bg-[#0a0a0a]"><Loader2 className="w-6 h-6 animate-spin text-[#0095f6]" /></div>;
   if (!user) return <AuthScreen />;
 
   const openProfile = (id: string) => {
@@ -102,7 +104,13 @@ export default function App() {
         />
       </nav>
 
-      <div className="px-3 pb-6">
+      <div className="px-3 pb-6 flex flex-col gap-1">
+        <SidebarItem
+          icon={theme === 'dark' ? Sun : Moon}
+          label={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+          active={false}
+          onClick={toggleTheme}
+        />
         <SidebarItem icon={LogOut} label="Log out" active={false} onClick={signOut} danger />
       </div>
     </>
@@ -111,20 +119,20 @@ export default function App() {
   const fullScreen = tab === 'song' || tab === 'admin';
 
   return (
-    <div className="min-h-screen bg-white flex">
+    <div className="min-h-screen bg-white dark:bg-[#121212] flex">
       {/* Desktop sidebar — always visible on md+ */}
-      <aside className="hidden md:flex flex-col w-[72px] xl:w-[244px] border-r border-[#dbdbdb] fixed inset-y-0 left-0 bg-white z-20">
+      <aside className="hidden md:flex flex-col w-[72px] xl:w-[244px] border-r border-[#dbdbdb] dark:border-[#262626] fixed inset-y-0 left-0 bg-white dark:bg-[#121212] z-20">
         {sidebarContent}
       </aside>
 
       {/* Mobile slide-out drawer */}
       {drawerOpen && (
         <div className="md:hidden fixed inset-0 z-40">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setDrawerOpen(false)} />
-          <aside className="absolute left-0 inset-y-0 w-[260px] bg-white flex flex-col animate-[slideIn_0.2s_ease-out]">
-            <div className="flex items-center justify-between px-3 py-4 border-b border-[#dbdbdb]">
+          <div className="absolute inset-0 bg-black/30 dark:bg-black/50" onClick={() => setDrawerOpen(false)} />
+          <aside className="absolute left-0 inset-y-0 w-[260px] bg-white dark:bg-[#121212] flex flex-col animate-[slideIn_0.2s_ease-out]">
+            <div className="flex items-center justify-between px-3 py-4 border-b border-[#dbdbdb] dark:border-[#262626]">
               <MomentlyWordmark />
-              <button onClick={() => setDrawerOpen(false)} className="p-1 text-[#8e8e8e] hover:text-[#262626]">
+              <button onClick={() => setDrawerOpen(false)} className="p-1 text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#262626] dark:hover:text-[#f5f5f5]">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -138,15 +146,22 @@ export default function App() {
       {/* Main area */}
       <div className="flex-1 md:ml-[72px] xl:ml-[244px] flex flex-col min-h-screen">
         {/* Mobile top bar with menu button */}
-        <header className="md:hidden sticky top-0 bg-white z-10 border-b border-[#dbdbdb]">
+        <header className="md:hidden sticky top-0 bg-white dark:bg-[#121212] z-10 border-b border-[#dbdbdb] dark:border-[#262626]">
           <div className="h-14 px-4 flex items-center gap-3">
-            <button onClick={() => setDrawerOpen(true)} className="p-1 text-[#262626]" aria-label="Open menu">
+            <button onClick={() => setDrawerOpen(true)} className="p-1 text-[#262626] dark:text-[#f5f5f5]" aria-label="Open menu">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
             <MomentlyMark className="w-7 h-7" />
             <MomentlyWordmark />
+            <button
+              onClick={toggleTheme}
+              className="ml-auto p-2 rounded-lg text-[#262626] dark:text-[#f5f5f5] hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] transition"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
           </div>
         </header>
 
@@ -178,9 +193,9 @@ function SidebarItem({ icon: Icon, label, active, onClick, danger }: { icon: Rea
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-4 px-3 py-3 rounded-lg transition group ${danger ? 'text-[#ed4956] hover:bg-[#efefef]' : active ? 'text-[#262626] font-semibold bg-[#f2f2f2]' : 'text-[#262626] hover:bg-[#f2f2f2]'}`}
+      className={`flex items-center gap-4 px-3 py-3 rounded-lg transition group ${danger ? 'text-[#ed4956] hover:bg-[#efefef] dark:hover:bg-[#262626]' : active ? 'text-[#262626] dark:text-[#f5f5f5] font-semibold bg-[#f2f2f2] dark:bg-[#1a1a1a]' : 'text-[#262626] dark:text-[#f5f5f5] hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a]'}`}
     >
-      <Icon className={`w-6 h-6 flex-shrink-0 ${danger ? '' : active ? 'text-[#262626]' : 'text-[#262626] group-hover:text-[#262626]'}`} />
+      <Icon className="w-6 h-6 flex-shrink-0" />
       <span className="hidden xl:block text-base">{label}</span>
     </button>
   );
@@ -225,8 +240,8 @@ function OtherProfile({ profileId, onBack, onMessage }: { profileId: string; onB
     setFollowing(!following);
   };
 
-  if (loading) return <div className="text-center py-20 text-sm text-[#8e8e8e]">Loading…</div>;
-  if (!profile) return <div className="text-center py-20 text-sm text-[#8e8e8e]">Profile not found</div>;
+  if (loading) return <div className="text-center py-20 text-sm text-[#8e8e8e] dark:text-[#a8a8a8]">Loading…</div>;
+  if (!profile) return <div className="text-center py-20 text-sm text-[#8e8e8e] dark:text-[#a8a8a8]">Profile not found</div>;
 
   const hasStories = storyGroups.length > 0 && storyGroups[0].stories.length > 0;
   const storyGroup = hasStories ? storyGroups[0] : null;
@@ -234,7 +249,7 @@ function OtherProfile({ profileId, onBack, onMessage }: { profileId: string; onB
 
   return (
     <div className="max-w-[935px] mx-auto px-4 py-8">
-      <button onClick={onBack} className="text-sm text-[#8e8e8e] mb-4 hover:text-[#262626] flex items-center gap-1">
+      <button onClick={onBack} className="text-sm text-[#8e8e8e] dark:text-[#a8a8a8] mb-4 hover:text-[#262626] dark:hover:text-[#f5f5f5] flex items-center gap-1">
         <ArrowLeft className="w-4 h-4" /> Back
       </button>
       <div className="flex items-start gap-8 mb-8">
@@ -243,46 +258,46 @@ function OtherProfile({ profileId, onBack, onMessage }: { profileId: string; onB
           className={`shrink-0 ${hasStories ? 'cursor-pointer' : 'cursor-default'}`}
           disabled={!hasStories}
         >
-          <div className={`w-24 h-24 rounded-full p-[3px] ${hasStories && !storiesSeen ? 'bg-gradient-to-tr from-[#feda75] via-[#d62976] to-[#962fbf]' : hasStories ? 'ring-1 ring-[#dbdbdb]' : ''}`}>
+          <div className={`w-24 h-24 rounded-full p-[3px] ${hasStories && !storiesSeen ? 'bg-gradient-to-tr from-[#feda75] via-[#d62976] to-[#962fbf]' : hasStories ? 'ring-1 ring-[#dbdbdb] dark:ring-[#262626]' : ''}`}>
             <img
               src={profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username)}&background=random`}
-              className="w-full h-full rounded-full object-cover border-2 border-white"
+              className="w-full h-full rounded-full object-cover border-2 border-white dark:border-[#1a1a1a]"
               alt=""
             />
           </div>
         </button>
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-3 flex-wrap">
-            <h1 className="text-xl font-light text-[#262626]">{profile.username}</h1>
+            <h1 className="text-xl font-light text-[#262626] dark:text-[#f5f5f5]">{profile.username}</h1>
             <button
               onClick={toggleFollow}
-              className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition ${following ? 'bg-[#efefef] text-[#262626] hover:bg-[#e0e0e0]' : 'bg-[#0095f6] text-white hover:bg-[#1877f2]'}`}
+              className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition ${following ? 'bg-[#efefef] dark:bg-[#262626] text-[#262626] dark:text-[#f5f5f5] hover:bg-[#e0e0e0] dark:hover:bg-[#333333]' : 'bg-[#0095f6] text-white hover:bg-[#1877f2]'}`}
             >
               {following ? 'Following' : 'Follow'}
             </button>
             <button
               onClick={onMessage}
-              className="px-4 py-1.5 text-sm font-semibold bg-[#efefef] hover:bg-[#e0e0e0] rounded-lg flex items-center gap-1.5"
+              className="px-4 py-1.5 text-sm font-semibold bg-[#efefef] dark:bg-[#262626] hover:bg-[#e0e0e0] dark:hover:bg-[#333333] rounded-lg flex items-center gap-1.5"
             >
               <MessageSquare className="w-4 h-4" /> Message
             </button>
           </div>
           <div className="flex gap-6 mb-3 text-sm">
-            <span><b className="text-[#262626]">{posts.length}</b> <span className="text-[#8e8e8e]">posts</span></span>
+            <span><b className="text-[#262626] dark:text-[#f5f5f5]">{posts.length}</b> <span className="text-[#8e8e8e] dark:text-[#a8a8a8]">posts</span></span>
             {hasStories && (
               <button onClick={() => setViewerIndex(0)} className="hover:underline">
-                <b className="text-[#262626]">{storyGroup!.stories.length}</b> <span className="text-[#8e8e8e]">{storiesSeen ? 'stories' : 'new stories'}</span>
+                <b className="text-[#262626] dark:text-[#f5f5f5]">{storyGroup!.stories.length}</b> <span className="text-[#8e8e8e] dark:text-[#a8a8a8]">{storiesSeen ? 'stories' : 'new stories'}</span>
               </button>
             )}
           </div>
-          <p className="text-sm text-[#262626] font-semibold">{profile.full_name || ''}</p>
-          <p className="text-sm text-[#8e8e8e]">{profile.bio || 'No bio yet'}</p>
+          <p className="text-sm text-[#262626] dark:text-[#f5f5f5] font-semibold">{profile.full_name || ''}</p>
+          <p className="text-sm text-[#8e8e8e] dark:text-[#a8a8a8]">{profile.bio || 'No bio yet'}</p>
         </div>
       </div>
 
       {hasStories && (
         <div className="mb-6">
-          <p className="text-xs font-semibold text-[#8e8e8e] uppercase tracking-wide mb-2">Recent stories</p>
+          <p className="text-xs font-semibold text-[#8e8e8e] dark:text-[#a8a8a8] uppercase tracking-wide mb-2">Recent stories</p>
           <div className="flex gap-2 overflow-x-auto scrollbar-hide">
             {storyGroup!.stories.map((s) => (
               <button
@@ -302,10 +317,10 @@ function OtherProfile({ profileId, onBack, onMessage }: { profileId: string; onB
         </div>
       )}
 
-      <div className="border-t border-[#dbdbdb] pt-4">
+      <div className="border-t border-[#dbdbdb] dark:border-[#262626] pt-4">
         <div className="grid grid-cols-3 gap-1">
           {posts.map((post) => (
-            <div key={post.id} className="aspect-square bg-[#fafafa] overflow-hidden">
+            <div key={post.id} className="aspect-square bg-[#fafafa] dark:bg-[#0a0a0a] overflow-hidden">
               {post.media_type === 'reel' ? (
                 <video src={post.media_url} poster={post.thumbnail_url || undefined} className="w-full h-full object-cover" muted />
               ) : (
@@ -314,7 +329,7 @@ function OtherProfile({ profileId, onBack, onMessage }: { profileId: string; onB
             </div>
           ))}
         </div>
-        {posts.length === 0 && <p className="text-center text-sm text-[#8e8e8e] py-16">No posts yet.</p>}
+        {posts.length === 0 && <p className="text-center text-sm text-[#8e8e8e] dark:text-[#a8a8a8] py-16">No posts yet.</p>}
       </div>
 
       {viewerIndex !== null && storyGroups[viewerIndex] && (

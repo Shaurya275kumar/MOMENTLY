@@ -71,25 +71,25 @@ export default function MusicLibraryScreen({ onOpenSong, onBack }: Props) {
   return (
     <div className="max-w-[935px] mx-auto px-4 py-6">
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={onBack} className="text-sm text-[#8e8e8e] hover:text-[#262626] flex items-center gap-1">
+        <button onClick={onBack} className="text-sm text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#262626] dark:hover:text-[#f5f5f5] dark:text-[#f5f5f5] flex items-center gap-1">
           <X className="w-4 h-4" /> Back
         </button>
-        <h1 className="text-xl font-bold text-[#262626] flex items-center gap-2">
+        <h1 className="text-xl font-bold text-[#262626] dark:text-[#f5f5f5] flex items-center gap-2">
           <MusicIcon className="w-6 h-6 text-[#0095f6]" /> Music
         </h1>
       </div>
 
       {/* Search bar */}
       <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8e8e8e]" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8e8e8e] dark:text-[#a8a8a8]" />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search songs, artists, albums…"
-          className="w-full pl-10 pr-10 py-2.5 bg-[#efefef] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0095f6] transition"
+          className="w-full pl-10 pr-10 py-2.5 bg-[#efefef] dark:bg-[#262626] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0095f6] transition"
         />
         {query && (
-          <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8e8e8e] hover:text-[#262626]">
+          <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#262626] dark:hover:text-[#f5f5f5] dark:text-[#f5f5f5]">
             <X className="w-4 h-4" />
           </button>
         )}
@@ -105,13 +105,13 @@ export default function MusicLibraryScreen({ onOpenSong, onBack }: Props) {
 
       {/* Browse tabs */}
       {!isSearching && (
-        <div className="flex gap-1 border-b border-[#dbdbdb] mb-5">
+        <div className="flex gap-1 border-b border-[#dbdbdb] dark:border-[#262626] mb-5">
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setActiveTab(id)}
               className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px ${
-                activeTab === id ? 'border-[#0095f6] text-[#0095f6]' : 'border-transparent text-[#8e8e8e] hover:text-[#262626]'
+                activeTab === id ? 'border-[#0095f6] text-[#0095f6]' : 'border-transparent text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#262626] dark:hover:text-[#f5f5f5] dark:text-[#f5f5f5]'
               }`}
             >
               <Icon className="w-4 h-4" /> {label}
@@ -148,7 +148,7 @@ export default function MusicLibraryScreen({ onOpenSong, onBack }: Props) {
           {Object.entries(byGenre).map(([genre, genreSongs]) => (
             <div key={genre}>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-bold text-[#262626] uppercase tracking-wide">{genre}</h2>
+                <h2 className="text-sm font-bold text-[#262626] dark:text-[#f5f5f5] uppercase tracking-wide">{genre}</h2>
                 <button onClick={() => setGenreFilter(genre)} className="text-xs text-[#0095f6] font-semibold flex items-center gap-0.5 hover:underline">
                   See all <ChevronRight className="w-3 h-3" />
                 </button>
@@ -165,7 +165,7 @@ export default function MusicLibraryScreen({ onOpenSong, onBack }: Props) {
 
       {/* Sticky mini player */}
       {nowPlaying && (
-        <div className="fixed bottom-0 left-0 right-0 md:left-[72px] xl:left-[244px] z-30 bg-white border-t border-[#dbdbdb] px-4 py-3 shadow-lg">
+        <div className="fixed bottom-0 left-0 right-0 md:left-[72px] xl:left-[244px] z-30 bg-white dark:bg-[#121212] border-t border-[#dbdbdb] dark:border-[#262626] px-4 py-3 shadow-lg">
           <StickyPlayer
             ref={playerRef}
             song={nowPlaying}
@@ -183,7 +183,7 @@ function GenreChip({ label, active, onClick }: { label: string; active: boolean;
     <button
       onClick={onClick}
       className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition ${
-        active ? 'bg-[#262626] text-white' : 'bg-[#efefef] text-[#262626] hover:bg-[#dbdbdb]'
+        active ? 'bg-[#262626] text-white' : 'bg-[#efefef] dark:bg-[#262626] text-[#262626] dark:text-[#f5f5f5] hover:bg-[#dbdbdb]'
       }`}
     >
       {label}
@@ -193,7 +193,7 @@ function GenreChip({ label, active, onClick }: { label: string; active: boolean;
 
 function SongRow({ song, onOpen, onPlay, isPlaying }: { song: Song; onOpen: () => void; onPlay: () => void; isPlaying: boolean }) {
   return (
-    <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#fafafa] transition group">
+    <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#fafafa] dark:hover:bg-[#0a0a0a] dark:bg-[#0a0a0a] transition group">
       <button onClick={onPlay} className="relative flex-shrink-0" aria-label="Play preview">
         <img src={song.artwork_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(song.title)}&background=0095f6&color=fff&size=120`} className="w-12 h-12 rounded-lg object-cover" alt="" />
         <span className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg opacity-0 group-hover:opacity-100 transition">
@@ -202,12 +202,12 @@ function SongRow({ song, onOpen, onPlay, isPlaying }: { song: Song; onOpen: () =
         {isPlaying && <span className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg"><span className="flex items-end gap-0.5 h-4"><span className="w-0.5 bg-[#0095f6] animate-[bounce_0.5s_ease-in-out_infinite]" style={{ height: '60%' }} /><span className="w-0.5 bg-[#0095f6] animate-[bounce_0.7s_ease-in-out_infinite]" style={{ height: '100%' }} /><span className="w-0.5 bg-[#0095f6] animate-[bounce_0.6s_ease-in-out_infinite]" style={{ height: '80%' }} /></span></span>}
       </button>
       <button onClick={onOpen} className="flex-1 min-w-0 text-left">
-        <p className="text-sm font-semibold text-[#262626] truncate hover:underline">{song.title}</p>
-        <p className="text-xs text-[#8e8e8e] truncate">{song.artist}{song.album ? ` · ${song.album}` : ''}</p>
+        <p className="text-sm font-semibold text-[#262626] dark:text-[#f5f5f5] truncate hover:underline">{song.title}</p>
+        <p className="text-xs text-[#8e8e8e] dark:text-[#a8a8a8] truncate">{song.artist}{song.album ? ` · ${song.album}` : ''}</p>
       </button>
-      {song.genre && <span className="hidden sm:inline-block text-[10px] text-[#8e8e8e] bg-[#f2f2f2] px-2 py-0.5 rounded-full">{song.genre}</span>}
-      <span className="text-xs text-[#8e8e8e] tabular-nums flex-shrink-0">{formatDuration(song.duration_sec)}</span>
-      <button onClick={onOpen} className="text-[#8e8e8e] hover:text-[#262626] flex-shrink-0">
+      {song.genre && <span className="hidden sm:inline-block text-[10px] text-[#8e8e8e] dark:text-[#a8a8a8] bg-[#f2f2f2] dark:bg-[#1a1a1a] px-2 py-0.5 rounded-full">{song.genre}</span>}
+      <span className="text-xs text-[#8e8e8e] dark:text-[#a8a8a8] tabular-nums flex-shrink-0">{formatDuration(song.duration_sec)}</span>
+      <button onClick={onOpen} className="text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#262626] dark:hover:text-[#f5f5f5] dark:text-[#f5f5f5] flex-shrink-0">
         <ChevronRight className="w-5 h-5" />
       </button>
     </div>
@@ -217,19 +217,19 @@ function SongRow({ song, onOpen, onPlay, isPlaying }: { song: Song; onOpen: () =
 function SongCard({ song, onOpen, onPlay }: { song: Song; onOpen: () => void; onPlay: () => void }) {
   return (
     <button onClick={onOpen} className="group text-left">
-      <div className="relative aspect-square rounded-xl overflow-hidden bg-[#f2f2f2] mb-2">
+      <div className="relative aspect-square rounded-xl overflow-hidden bg-[#f2f2f2] dark:bg-[#1a1a1a] mb-2">
         <img src={song.artwork_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(song.title)}&background=0095f6&color=fff&size=200`} className="w-full h-full object-cover transition group-hover:scale-105" alt="" />
         <button
           onClick={(e) => { e.stopPropagation(); onPlay(); }}
           className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition"
         >
-          <span className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
-            <Play className="w-5 h-5 text-[#262626] fill-[#262626] ml-0.5" />
+          <span className="w-10 h-10 rounded-full bg-white dark:bg-[#121212]/90 flex items-center justify-center">
+            <Play className="w-5 h-5 text-[#262626] dark:text-[#f5f5f5] fill-[#262626] ml-0.5" />
           </span>
         </button>
       </div>
-      <p className="text-xs font-semibold text-[#262626] truncate">{song.title}</p>
-      <p className="text-xs text-[#8e8e8e] truncate">{song.artist}</p>
+      <p className="text-xs font-semibold text-[#262626] dark:text-[#f5f5f5] truncate">{song.title}</p>
+      <p className="text-xs text-[#8e8e8e] dark:text-[#a8a8a8] truncate">{song.artist}</p>
     </button>
   );
 }
@@ -239,10 +239,10 @@ function LoadingState() {
     <div className="space-y-2">
       {Array.from({ length: 8 }).map((_, i) => (
         <div key={i} className="flex items-center gap-3 p-2 animate-pulse">
-          <div className="w-12 h-12 rounded-lg bg-[#f2f2f2]" />
+          <div className="w-12 h-12 rounded-lg bg-[#f2f2f2] dark:bg-[#1a1a1a]" />
           <div className="flex-1 space-y-1.5">
-            <div className="h-3 w-32 rounded bg-[#f2f2f2]" />
-            <div className="h-2.5 w-24 rounded bg-[#f2f2f2]" />
+            <div className="h-3 w-32 rounded bg-[#f2f2f2] dark:bg-[#1a1a1a]" />
+            <div className="h-2.5 w-24 rounded bg-[#f2f2f2] dark:bg-[#1a1a1a]" />
           </div>
         </div>
       ))}
@@ -263,7 +263,7 @@ function EmptyState({ query }: { query: string }) {
   return (
     <div className="text-center py-16">
       <MusicIcon className="w-12 h-12 mx-auto mb-3 text-[#dbdbdb]" />
-      <p className="text-sm text-[#8e8e8e]">{query ? `No songs found for "${query}"` : 'No songs available yet'}</p>
+      <p className="text-sm text-[#8e8e8e] dark:text-[#a8a8a8]">{query ? `No songs found for "${query}"` : 'No songs available yet'}</p>
     </div>
   );
 }

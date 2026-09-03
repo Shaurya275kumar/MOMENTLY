@@ -78,12 +78,12 @@ function FeedPost({ post, onLike, onSave, onComments, onShare, onOpenProfile, on
   };
 
   return (
-    <article className="bg-white md:border md:border-[#dbdbdb] rounded-none md:rounded-md overflow-hidden animate-fade-in">
+    <article className="bg-white dark:bg-[#121212] md:border md:border-[#dbdbdb] dark:border-[#262626] rounded-none md:rounded-md overflow-hidden animate-fade-in">
       <header className="flex items-center gap-3 px-4 py-3">
         <img src={post.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.profiles?.username || 'user')}&background=random`} className="w-8 h-8 rounded-full object-cover" alt="" />
-        <button onClick={() => onOpenProfile(post.user_id)} className="text-sm font-semibold text-[#262626] hover:underline">{post.profiles?.username}</button>
+        <button onClick={() => onOpenProfile(post.user_id)} className="text-sm font-semibold text-[#262626] dark:text-[#f5f5f5] hover:underline">{post.profiles?.username}</button>
         <span className="text-xs ig-gray">· {timeAgo(post.created_at)}</span>
-        <button className="ml-auto"><MoreHorizontal className="w-5 h-5 text-[#262626]" /></button>
+        <button className="ml-auto"><MoreHorizontal className="w-5 h-5 text-[#262626] dark:text-[#f5f5f5]" /></button>
       </header>
       <div className="relative" onClick={handleImageTap}>
         {post.media_type === 'reel' ? (
@@ -99,17 +99,17 @@ function FeedPost({ post, onLike, onSave, onComments, onShare, onOpenProfile, on
       </div>
       <div className="px-4 pt-2 pb-3">
         <div className="flex items-center gap-4 py-2">
-          <button onClick={() => onLike(post)} className="active:scale-90 transition"><Heart className={`w-6 h-6 ${post.liked_by_me ? 'fill-[#ed4956] text-[#ed4956]' : 'text-[#262626]'}`} /></button>
-          <button onClick={() => onComments(post.id)} className="active:scale-90 transition"><MessageCircle className="w-6 h-6 text-[#262626]" /></button>
-          <button onClick={() => onShare(post)} className="active:scale-90 transition"><Send className="w-6 h-6 text-[#262626]" /></button>
-          <button onClick={() => onSave(post)} className="ml-auto active:scale-90 transition"><Bookmark className={`w-6 h-6 ${post.saved_by_me ? 'fill-[#262626] text-[#262626]' : 'text-[#262626]'}`} /></button>
+          <button onClick={() => onLike(post)} className="active:scale-90 transition"><Heart className={`w-6 h-6 ${post.liked_by_me ? 'fill-[#ed4956] text-[#ed4956]' : 'text-[#262626] dark:text-[#f5f5f5]'}`} /></button>
+          <button onClick={() => onComments(post.id)} className="active:scale-90 transition"><MessageCircle className="w-6 h-6 text-[#262626] dark:text-[#f5f5f5]" /></button>
+          <button onClick={() => onShare(post)} className="active:scale-90 transition"><Send className="w-6 h-6 text-[#262626] dark:text-[#f5f5f5]" /></button>
+          <button onClick={() => onSave(post)} className="ml-auto active:scale-90 transition"><Bookmark className={`w-6 h-6 ${post.saved_by_me ? 'fill-[#262626] text-[#262626] dark:text-[#f5f5f5]' : 'text-[#262626] dark:text-[#f5f5f5]'}`} /></button>
         </div>
-        <p className="text-sm font-semibold text-[#262626]">{post.like_count || 0} likes</p>
+        <p className="text-sm font-semibold text-[#262626] dark:text-[#f5f5f5]">{post.like_count || 0} likes</p>
         {post.comment_count ? (
           <button onClick={() => onComments(post.id)} className="text-sm ig-gray mt-0.5">View all {post.comment_count} comments</button>
         ) : null}
         {post.caption && (
-          <p className="text-sm text-[#262626] mt-1"><span className="font-semibold mr-1.5">{post.profiles?.username}</span>{post.caption}</p>
+          <p className="text-sm text-[#262626] dark:text-[#f5f5f5] mt-1"><span className="font-semibold mr-1.5">{post.profiles?.username}</span>{post.caption}</p>
         )}
         {post.post_music?.songs && (
           <PostMusicBar song={post.post_music.songs} startTime={post.post_music.start_time} clipDuration={post.post_music.duration} onOpenSong={onOpenSong} />
@@ -137,13 +137,13 @@ function SuggestionsRail({ onOpenProfile }: { onOpenProfile: (id: string) => voi
       <div className="flex items-center gap-3 mb-6">
         <img src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.username || 'me')}&background=random`} className="w-11 h-11 rounded-full object-cover" alt="" />
         <div>
-          <p className="text-sm font-semibold text-[#262626]">{profile?.username}</p>
+          <p className="text-sm font-semibold text-[#262626] dark:text-[#f5f5f5]">{profile?.username}</p>
           <p className="text-xs ig-gray">{profile?.full_name || ''}</p>
         </div>
       </div>
       <div className="flex items-center justify-between mb-3">
         <p className="text-sm font-semibold ig-gray">Suggested for you</p>
-        <button className="text-xs font-semibold text-[#262626]">See All</button>
+        <button className="text-xs font-semibold text-[#262626] dark:text-[#f5f5f5]">See All</button>
       </div>
       <div className="space-y-3">
         {suggestions.map((s) => <SuggestionRow key={s.id} profile={s} onOpen={() => onOpenProfile(s.id)} />)}
@@ -173,10 +173,10 @@ function SuggestionRow({ profile, onOpen }: { profile: Profile; onOpen: () => vo
     <div className="flex items-center gap-3">
       <button onClick={onOpen}><img src={profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username)}&background=random`} className="w-9 h-9 rounded-full object-cover" alt="" /></button>
       <div className="flex-1 min-w-0">
-        <button onClick={onOpen} className="text-sm font-semibold text-[#262626] hover:underline block truncate">{profile.username}</button>
+        <button onClick={onOpen} className="text-sm font-semibold text-[#262626] dark:text-[#f5f5f5] hover:underline block truncate">{profile.username}</button>
         <p className="text-xs ig-gray truncate">Suggested for you</p>
       </div>
-      <button onClick={toggle} className={`text-xs font-semibold ${following ? 'text-[#8e8e8e]' : 'text-[#0095f6]'}`}>{following ? 'Following' : 'Follow'}</button>
+      <button onClick={toggle} className={`text-xs font-semibold ${following ? 'text-[#8e8e8e] dark:text-[#a8a8a8]' : 'text-[#0095f6]'}`}>{following ? 'Following' : 'Follow'}</button>
     </div>
   );
 }
@@ -214,7 +214,7 @@ function MusicBar({ post }: { post: Post }) {
       <button onClick={toggle} className="w-6 h-6 rounded-full bg-[#262626] text-white flex items-center justify-center flex-shrink-0 active:scale-90 transition">
         {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
       </button>
-      <Disc3 className={`w-4 h-4 text-[#8e8e8e] flex-shrink-0 ${playing ? 'animate-[spin_2s_linear_infinite]' : ''}`} />
+      <Disc3 className={`w-4 h-4 text-[#8e8e8e] dark:text-[#a8a8a8] flex-shrink-0 ${playing ? 'animate-[spin_2s_linear_infinite]' : ''}`} />
       <span className="text-xs ig-gray truncate">{post.music_tracks.title} · {post.music_tracks.artist}</span>
       <audio ref={audioRef} src={post.music_tracks.audio_url} loop preload="none" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} />
     </div>
@@ -258,10 +258,10 @@ function PostMusicBar({ song, startTime, clipDuration, onOpenSong }: { song: Pos
       <button onClick={toggle} className="w-6 h-6 rounded-full bg-[#262626] text-white flex items-center justify-center flex-shrink-0 active:scale-90 transition">
         {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
       </button>
-      <Disc3 className={`w-4 h-4 text-[#8e8e8e] flex-shrink-0 ${playing ? 'animate-[spin_2s_linear_infinite]' : ''}`} />
+      <Disc3 className={`w-4 h-4 text-[#8e8e8e] dark:text-[#a8a8a8] flex-shrink-0 ${playing ? 'animate-[spin_2s_linear_infinite]' : ''}`} />
       <button
         onClick={() => onOpenSong?.(song.id)}
-        className="text-xs ig-gray truncate hover:text-[#262626] hover:underline transition"
+        className="text-xs ig-gray truncate hover:text-[#262626] dark:hover:text-[#f5f5f5] dark:text-[#f5f5f5] hover:underline transition"
       >
         {song.title} · {song.artist}
       </button>

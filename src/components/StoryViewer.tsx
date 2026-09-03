@@ -112,8 +112,8 @@ export default function StoryViewer({ groups, startIndex, currentUserId, onClose
         {/* progress bars */}
         <div className="absolute top-2 inset-x-2 z-20 flex gap-1">
           {group.stories.map((_, i) => (
-            <div key={i} className="flex-1 h-[3px] bg-white/30 rounded-full overflow-hidden">
-              <div className="h-full bg-white" style={{ width: i < si ? '100%' : i === si ? `${progress * 100}%` : '0%' }} />
+            <div key={i} className="flex-1 h-[3px] bg-white dark:bg-[#121212]/30 rounded-full overflow-hidden">
+              <div className="h-full bg-white dark:bg-[#121212]" style={{ width: i < si ? '100%' : i === si ? `${progress * 100}%` : '0%' }} />
             </div>
           ))}
         </div>
@@ -122,7 +122,7 @@ export default function StoryViewer({ groups, startIndex, currentUserId, onClose
         <div className="absolute top-6 inset-x-3 z-20 flex items-center gap-2.5 pt-1">
           <img src={group.profile.avatar_url ||
             `https://ui-avatars.com/api/?name=${encodeURIComponent(group.profile.username)}&background=random`}
-            className="w-8 h-8 rounded-full object-cover border border-white/20" alt="" />
+            className="w-8 h-8 rounded-full object-cover border border-white dark:border-[#1a1a1a]/20" alt="" />
           <button onClick={() => { onClose(); onOpenProfile(group.profile.id); }} className="text-sm font-semibold text-white hover:underline">
             {group.profile.username}
           </button>
