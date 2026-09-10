@@ -19,6 +19,8 @@ import {
   type MediaType,
 } from '../lib/chat';
 import { ArrowLeft, Send, Search, MessageCircle, Check, CheckCheck, Phone, Video, Paperclip, ImageIcon, FileText } from 'lucide-react';
+import CallModal from './CallModal';
+import { subscribeToIncomingCalls, type CallType } from '../lib/webrtc';
 
 export default function ChatScreen({ initialUserId, onOpenProfile }: { initialUserId?: string | null; onOpenProfile?: (id: string) => void }) {
   const { user } = useAuth();
@@ -145,6 +147,7 @@ function Thread({ conversationId, onBack, onOpenProfile }: { conversationId: str
   const [otherOnline, setOtherOnline] = useState(false);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [call, setCall] = useState<{ callType: CallType; isInitiator: boolean } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -199,6 +202,15 @@ function Thread({ conversationId, onBack, onOpenProfile }: { conversationId: str
       supabase.removeChannel(ch);
     };
   }, [user, other, conversationId]);
+
+  // Listen for incoming calls
+  useEffect(() => {
+    if (!user) return;
+    const ch = subscribeToIncomingCalls(conversationId, user.id, (_from, callType) => {
+      setCall({ callType, isInitiator: false });
+    });
+    return () => { supabase.removeChannel(ch); };
+  }, [conversationId, user]);
 
   // Auto-scroll to bottom on new messages / typing
   useEffect(() => {
@@ -330,8 +342,18 @@ function Thread({ conversationId, onBack, onOpenProfile }: { conversationId: str
             <span className={`text-xs ${otherTyping ? 'text-[#0095f6]' : otherOnline ? 'text-[#25D366]' : 'ig-gray'}`}>{statusText}</span>
           </div>
         </button>
-        <button className="text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#0095f6] p-1.5 rounded-full hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] dark:bg-[#1a1a1a]"><Phone className="w-5 h-5" /></button>
-        <button className="text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#0095f6] p-1.5 rounded-full hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] dark:bg-[#1a1a1a]"><Video className="w-5 h-5" /></button>
+        <button
+          onClick={() => other && setCall({ callType: 'voice', isInitiator: true })}
+          disabled={!other}
+          className="text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#0095f6] p-1.5 rounded-full hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] dark:bg-[#1a1a1a] disabled:opacity-40"
+          aria-label="Voice call"
+        ><Phone className="w-5 h-5" /></button>
+        <button
+          onClick={() => other && setCall({ callType: 'video', isInitiator: true })}
+          disabled={!other}
+          className="text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#0095f6] p-1.5 rounded-full hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] dark:bg-[#1a1a1a] disabled:opacity-40"
+          aria-label="Video call"
+        ><Video className="w-5 h-5" /></button>
       </div>
 
       {/* Messages */}
@@ -439,6 +461,16 @@ function Thread({ conversationId, onBack, onOpenProfile }: { conversationId: str
           <Send className="w-5 h-5" />
         </button>
       </div>
+
+      {call && other && (
+        <CallModal
+          conversationId={conversationId}
+          other={other}
+          callType={call.callType}
+          isInitiator={call.isInitiator}
+          onClose={() => setCall(null)}
+        />
+      )}
     </>
   );
 }

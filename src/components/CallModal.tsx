@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Phone, Video, PhoneOff, Mic, MicOff, VideoOff, Video as VideoIcon, User as UserIcon, Loader2 } from 'lucide-react';
+import { Phone, PhoneOff, Mic, MicOff, VideoOff, Video as VideoIcon, Loader2 } from 'lucide-react';
 import type { Profile } from '../lib/supabase';
-import { WebRTCCall, sendCallInvite, subscribeToIncomingCalls, type CallType, type CallStatus } from '../lib/webrtc';
+import { WebRTCCall, sendCallInvite, type CallType, type CallStatus } from '../lib/webrtc';
 import { useAuth } from '../lib/auth';
 
 type Props = {
@@ -60,7 +60,6 @@ export default function CallModal({ conversationId, other, callType, isInitiator
       sendCallInvite(conversationId, user.id, callType);
       call.start().catch((e) => setError(e.message));
     } else {
-      // Subscribe to signals — when the offer arrives, it'll auto-accept
       call.start().catch((e) => setError(e.message));
     }
 

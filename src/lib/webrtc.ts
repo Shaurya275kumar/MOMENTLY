@@ -8,6 +8,7 @@ export type CallSignal =
   | { type: 'offer'; sdp: RTCSessionDescriptionInit }
   | { type: 'answer'; sdp: RTCSessionDescriptionInit }
   | { type: 'ice'; candidate: RTCIceCandidateInit }
+  | { type: 'accept' }
   | { type: 'decline' }
   | { type: 'end' };
 
@@ -34,8 +35,7 @@ export class WebRTCCall {
   private otherId: string;
   private callType: CallType;
   private isInitiator: boolean;
-  private makingOffer = false;
-  private ignoreOffer = false;
+  private pendingCandidates: RTCIceCandidateInit[] = [];
   private ended = false;
 
   constructor(params: {
@@ -57,11 +57,14 @@ export class WebRTCCall {
   async start(): Promise<void> {
     this.setupSignaling();
     if (this.isInitiator) {
+      // Initiator: get media + create PC, but DON'T send the offer yet.
+      // Wait for the receiver to send 'accept' after they pick up.
       await this.getUserMedia();
       this.createPeerConnection();
       await this.createOffer();
       this.handlers.onStatusChange('outgoing');
     } else {
+      // Receiver: just listen for signals. The offer will arrive after we send 'accept'.
       this.handlers.onStatusChange('incoming');
     }
   }
@@ -76,9 +79,6 @@ export class WebRTCCall {
         if (msg.payload?.from !== this.otherId) return;
         this.handleSignal(msg.payload.signal);
       })
-      .on('broadcast', { event: 'call' }, (msg: { payload: { from: string; type: CallType } }) => {
-        // handled by external listener
-      })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           await this.channel!.track({ userId: this.myId });
@@ -89,20 +89,27 @@ export class WebRTCCall {
   private async handleSignal(signal: CallSignal) {
     if (this.ended) return;
 
-    if (signal.type === 'offer') {
-      if (this.ignoreOffer || (this.pc?.signalingState === 'stable' && this.makingOffer)) {
-        this.ignoreOffer = true;
-        return;
+    if (signal.type === 'accept') {
+      // Receiver accepted — initiator sends the offer now.
+      if (this.isInitiator && this.pc) {
+        this.sendSignal({ type: 'offer', sdp: this.pc.localDescription! });
       }
-      this.ignoreOffer = false;
+      return;
+    }
 
+    if (signal.type === 'offer') {
       if (!this.pc) {
         await this.getUserMedia();
         this.createPeerConnection();
       }
-
       try {
         await this.pc!.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+        // Flush any buffered ICE candidates
+        for (const c of this.pendingCandidates) {
+          try { await this.pc!.addIceCandidate(new RTCIceCandidate(c)); } catch {}
+        }
+        this.pendingCandidates = [];
+
         const answer = await this.pc!.createAnswer();
         await this.pc!.setLocalDescription(answer);
         this.sendSignal({ type: 'answer', sdp: answer });
@@ -114,16 +121,23 @@ export class WebRTCCall {
       if (!this.pc) return;
       try {
         await this.pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+        for (const c of this.pendingCandidates) {
+          try { await this.pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
+        }
+        this.pendingCandidates = [];
         this.handlers.onStatusChange('connected');
       } catch (e) {
         console.error('Error handling answer:', e);
       }
     } else if (signal.type === 'ice') {
-      if (!this.pc) return;
+      if (!this.pc || !this.pc.remoteDescription) {
+        this.pendingCandidates.push(signal.candidate);
+        return;
+      }
       try {
         await this.pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
       } catch (e) {
-        if (!this.ignoreOffer) console.error('ICE error:', e);
+        console.error('ICE error:', e);
       }
     } else if (signal.type === 'decline') {
       this.handlers.onStatusChange('declined');
@@ -183,26 +197,18 @@ export class WebRTCCall {
 
   private async createOffer(): Promise<void> {
     if (!this.pc) return;
-    this.makingOffer = true;
     try {
       const offer = await this.pc.createOffer();
       await this.pc.setLocalDescription(offer);
-      this.sendSignal({ type: 'offer', sdp: offer });
+      // Don't send yet — wait for 'accept' from receiver
     } catch (e) {
       console.error('Error creating offer:', e);
-    } finally {
-      this.makingOffer = false;
     }
   }
 
   async accept(): Promise<void> {
-    // The offer arrives via signal — no action needed here.
-    // accept() is called by the UI; the actual media/PC setup happens in handleSignal('offer').
-    // But if we haven't received the offer yet, just prep media.
-    if (!this.pc) {
-      await this.getUserMedia();
-      this.createPeerConnection();
-    }
+    // Receiver clicked accept — tell the initiator to send the offer.
+    this.sendSignal({ type: 'accept' });
   }
 
   decline(): void {
@@ -226,6 +232,7 @@ export class WebRTCCall {
   }
 
   private cleanup() {
+    if (this.ended) return;
     this.ended = true;
     this.localStream?.getTracks().forEach((t) => t.stop());
     this.remoteStream?.getTracks().forEach((t) => t.stop());
@@ -247,7 +254,7 @@ export function subscribeToIncomingCalls(
   myId: string,
   onIncoming: (from: string, callType: CallType) => void,
 ): RealtimeChannel {
-  const channel = supabase.channel(`call:${conversationId}`);
+  const channel = supabase.channel(`call-invite:${conversationId}`);
   channel
     .on('broadcast', { event: 'call' }, (msg: { payload: { from: string; type: CallType } }) => {
       if (msg.payload?.from && msg.payload.from !== myId) {
@@ -259,7 +266,7 @@ export function subscribeToIncomingCalls(
 }
 
 export function sendCallInvite(conversationId: string, myId: string, callType: CallType) {
-  const channel = supabase.channel(`call:${conversationId}`);
+  const channel = supabase.channel(`call-invite:${conversationId}`);
   channel.subscribe((status) => {
     if (status === 'SUBSCRIBED') {
       channel.send({
