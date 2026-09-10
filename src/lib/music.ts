@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { uploadFile } from './upload';
 
 export type Song = {
   id: string;
@@ -14,6 +15,7 @@ export type Song = {
   is_enabled: boolean;
   play_count: number;
   created_at: string;
+  user_id: string | null;
 };
 
 export type PostMusic = {
@@ -185,7 +187,7 @@ export async function createSong(input: AdminSongInput): Promise<Song> {
       artwork_url: input.artwork_url || null,
       preview_url: input.preview_url,
       duration_sec: input.duration_sec || null,
-      source: input.source || 'Royalty-free',
+      source: input.source || 'Imported',
       licensing_info: input.licensing_info || null,
       is_enabled: input.is_enabled ?? true,
     })
@@ -193,6 +195,34 @@ export async function createSong(input: AdminSongInput): Promise<Song> {
     .single();
   if (error) throw error;
   return data as Song;
+}
+
+export async function importSongFromFile(
+  file: File,
+  userId: string,
+  meta?: { title?: string; artist?: string; artworkUrl?: string | null },
+): Promise<Song> {
+  const audioUrl = await uploadFile('music-previews', file, userId);
+  const title = meta?.title || file.name.replace(/\.[^/.]+$/, '');
+  const artist = meta?.artist || 'Imported';
+
+  const durationSec = await new Promise<number | null>((resolve) => {
+    const audio = new Audio();
+    audio.preload = 'metadata';
+    audio.onloadedmetadata = () => resolve(isFinite(audio.duration) ? Math.floor(audio.duration) : null);
+    audio.onerror = () => resolve(null);
+    audio.src = URL.createObjectURL(file);
+  });
+
+  return createSong({
+    title,
+    artist,
+    preview_url: audioUrl,
+    duration_sec: durationSec,
+    artwork_url: meta?.artworkUrl || null,
+    source: 'Imported',
+    is_enabled: true,
+  });
 }
 
 export async function updateSong(id: string, input: Partial<AdminSongInput>): Promise<void> {

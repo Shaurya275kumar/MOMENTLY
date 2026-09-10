@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { Search, X, Play, Pause, Check, Loader2, ChevronLeft, Disc3, Scissors } from 'lucide-react';
-import { fetchSongs, formatDuration, type Song } from '../lib/music';
+import { Search, X, Play, Pause, Check, Loader2, ChevronLeft, Disc3, Scissors, Upload, Music as MusicIcon } from 'lucide-react';
+import { fetchSongs, importSongFromFile, formatDuration, type Song } from '../lib/music';
+import { useAuth } from '../lib/auth';
 
 type Props = {
   onConfirm: (song: Song, startTime: number, duration: number) => void;
@@ -16,9 +17,11 @@ const MAX_CLIP_DURATION = 30;
 const DEFAULT_CLIP_DURATION = 15;
 
 export default function MusicPickerModal({ onConfirm, onClose, initialSong, initialStart, initialDuration }: Props) {
+  const { user } = useAuth();
   const [step, setStep] = useState<Step>('browse');
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
+  const [importing, setImporting] = useState(false);
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<Song | null>(initialSong || null);
   const [startTime, setStartTime] = useState(initialStart || 0);
@@ -27,10 +30,10 @@ export default function MusicPickerModal({ onConfirm, onClose, initialSong, init
   const [currentTime, setCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const waveformRef = useRef<HTMLDivElement>(null);
 
-  // Refs to avoid stale closures in audio listeners
   const startTimeRef = useRef(startTime);
   const clipDurationRef = useRef(clipDuration);
   const playingRef = useRef(playing);
@@ -54,7 +57,6 @@ export default function MusicPickerModal({ onConfirm, onClose, initialSong, init
     return () => clearTimeout(searchTimer.current);
   }, [query]);
 
-  // Audio event handlers — attached once when entering trim step, use refs for values
   useEffect(() => {
     if (step !== 'trim') return;
     const audio = audioRef.current;
@@ -114,6 +116,20 @@ export default function MusicPickerModal({ onConfirm, onClose, initialSong, init
     setStep('trim');
   };
 
+  const handleImport = async (file: File) => {
+    if (!user) return;
+    setImporting(true);
+    try {
+      const song = await importSongFromFile(file, user.id);
+      setSongs((prev) => [song, ...prev]);
+      handleSelect(song);
+    } catch (e) {
+      console.error('Import failed:', e);
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const handleConfirm = () => {
     const audio = audioRef.current;
     if (audio) audio.pause();
@@ -160,7 +176,6 @@ export default function MusicPickerModal({ onConfirm, onClose, initialSong, init
 
   const handleDurationChange = (val: number) => {
     setClipDuration(val);
-    // If current position is past the new end, reset to start
     const audio = audioRef.current;
     if (audio && audio.currentTime >= startTimeRef.current + val) {
       audio.currentTime = startTimeRef.current;
@@ -178,10 +193,13 @@ export default function MusicPickerModal({ onConfirm, onClose, initialSong, init
           <BrowseStep
             songs={songs}
             loading={loading}
+            importing={importing}
             query={query}
             setQuery={setQuery}
             onSelect={handleSelect}
+            onImport={handleImport}
             onClose={handleClose}
+            fileRef={fileRef}
           />
         )}
         {step === 'trim' && selected && (
@@ -210,35 +228,65 @@ export default function MusicPickerModal({ onConfirm, onClose, initialSong, init
   );
 }
 
-function BrowseStep({ songs, loading, query, setQuery, onSelect, onClose }: {
+function BrowseStep({ songs, loading, importing, query, setQuery, onSelect, onImport, onClose, fileRef }: {
   songs: Song[];
   loading: boolean;
+  importing: boolean;
   query: string;
   setQuery: (v: string) => void;
   onSelect: (s: Song) => void;
+  onImport: (f: File) => void;
   onClose: () => void;
+  fileRef: React.RefObject<HTMLInputElement | null>;
 }) {
   return (
     <>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="audio/*"
+        className="hidden"
+        onChange={(e) => e.target.files?.[0] && onImport(e.target.files[0])}
+      />
       <div className="flex items-center justify-center px-5 py-3 border-b border-[#dbdbdb] dark:border-[#262626] relative">
         <h3 className="font-semibold text-sm text-[#262626] dark:text-[#f5f5f5]">Add Music</h3>
         <button onClick={onClose} className="absolute right-4 text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#262626] dark:hover:text-[#f5f5f5] dark:text-[#f5f5f5]"><X className="w-5 h-5" /></button>
       </div>
+
+      {/* Import from device */}
+      <div className="p-4 border-b border-[#dbdbdb] dark:border-[#262626]">
+        <button
+          onClick={() => fileRef.current?.click()}
+          disabled={importing}
+          className="w-full flex items-center justify-center gap-2.5 py-3 bg-[#0095f6] hover:bg-[#1877f2] text-white text-sm font-semibold rounded-lg transition disabled:opacity-50"
+        >
+          {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+          {importing ? 'Importing…' : 'Import from device'}
+        </button>
+        <p className="text-[10px] text-[#8e8e8e] dark:text-[#a8a8a8] mt-1.5 text-center">Upload an audio file to use it in your posts</p>
+      </div>
+
+      {/* Search existing songs */}
       <div className="p-4 border-b border-[#dbdbdb] dark:border-[#262626]">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8e8e8e] dark:text-[#a8a8a8]" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search songs, artists…"
-            autoFocus
+            placeholder="Search imported songs…"
             className="w-full pl-10 pr-4 py-2.5 bg-[#efefef] dark:bg-[#262626] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0095f6] transition"
           />
         </div>
       </div>
+
       <div className="flex-1 overflow-y-auto min-h-[200px]">
         {loading && <div className="py-12 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-[#0095f6]" /></div>}
-        {!loading && songs.length === 0 && <p className="text-center text-sm text-[#8e8e8e] dark:text-[#a8a8a8] py-12">No songs found</p>}
+        {!loading && songs.length === 0 && (
+          <div className="text-center py-12 px-5">
+            <MusicIcon className="w-10 h-10 mx-auto mb-2 text-[#dbdbdb]" />
+            <p className="text-sm text-[#8e8e8e] dark:text-[#a8a8a8]">No songs yet. Import one from your device above.</p>
+          </div>
+        )}
         {!loading && songs.map((song) => (
           <button
             key={song.id}
@@ -255,7 +303,6 @@ function BrowseStep({ songs, loading, query, setQuery, onSelect, onClose }: {
               <p className="text-sm font-semibold text-[#262626] dark:text-[#f5f5f5] truncate">{song.title}</p>
               <p className="text-xs text-[#8e8e8e] dark:text-[#a8a8a8] truncate">{song.artist}</p>
             </div>
-            {song.genre && <span className="hidden sm:inline-block text-[10px] text-[#8e8e8e] dark:text-[#a8a8a8] bg-[#f2f2f2] dark:bg-[#1a1a1a] px-2 py-0.5 rounded-full">{song.genre}</span>}
             <span className="text-xs text-[#8e8e8e] dark:text-[#a8a8a8] tabular-nums">{formatDuration(song.duration_sec)}</span>
           </button>
         ))}
@@ -305,17 +352,14 @@ function TrimStep({
       </div>
 
       <div className="p-5 space-y-4">
-        {/* Song info */}
         <div className="flex items-center gap-3">
           <img src={song.artwork_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(song.title)}&background=0095f6&color=fff&size=120`} className="w-14 h-14 rounded-lg object-cover" alt="" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[#262626] dark:text-[#f5f5f5] truncate">{song.title}</p>
             <p className="text-xs text-[#8e8e8e] dark:text-[#a8a8a8] truncate">{song.artist}</p>
-            {song.genre && <span className="inline-block text-[10px] text-[#8e8e8e] dark:text-[#a8a8a8] bg-[#f2f2f2] dark:bg-[#1a1a1a] px-2 py-0.5 rounded-full mt-0.5">{song.genre}</span>}
           </div>
         </div>
 
-        {/* Waveform with selection window */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-xs font-semibold text-[#8e8e8e] dark:text-[#a8a8a8] uppercase tracking-wide">Waveform</span>
@@ -326,7 +370,6 @@ function TrimStep({
             onClick={(e) => onSeekWaveform(e.clientX)}
             className="relative h-16 bg-[#f2f2f2] dark:bg-[#1a1a1a] rounded-lg overflow-hidden cursor-pointer"
           >
-            {/* Waveform bars */}
             <div className="absolute inset-0 flex items-center justify-between px-1">
               {waveBars.map((h, i) => {
                 const barPercent = (i / waveBars.length) * 100;
@@ -341,7 +384,6 @@ function TrimStep({
                 );
               })}
             </div>
-            {/* Selection overlay */}
             <div
               className="absolute inset-y-0 border-2 border-[#0095f6] rounded pointer-events-none"
               style={{ left: `${startPercent}%`, width: `${clipPercent}%` }}
@@ -352,7 +394,6 @@ function TrimStep({
           </div>
         </div>
 
-        {/* Start time slider */}
         <div>
           <label className="flex items-center justify-between text-xs font-semibold text-[#262626] dark:text-[#f5f5f5] mb-1.5">
             <span>Start Time</span>
@@ -369,7 +410,6 @@ function TrimStep({
           />
         </div>
 
-        {/* Clip duration slider */}
         <div>
           <label className="flex items-center justify-between text-xs font-semibold text-[#262626] dark:text-[#f5f5f5] mb-1.5">
             <span>Clip Duration</span>
@@ -387,7 +427,6 @@ function TrimStep({
           <p className="text-[10px] text-[#8e8e8e] dark:text-[#a8a8a8] mt-1">Max {MAX_CLIP_DURATION}s preview</p>
         </div>
 
-        {/* Preview controls */}
         <div className="flex items-center gap-3 bg-[#fafafa] dark:bg-[#0a0a0a] rounded-lg p-3">
           <button
             onClick={onTogglePlay}
