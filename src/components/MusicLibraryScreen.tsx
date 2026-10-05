@@ -216,12 +216,13 @@ function SongRow({ song, onOpen, onPlay, isPlaying }: { song: Song; onOpen: () =
 
 function SongCard({ song, onOpen, onPlay }: { song: Song; onOpen: () => void; onPlay: () => void }) {
   return (
-    <button onClick={onOpen} className="group text-left">
+    <div onClick={onOpen} className="group text-left cursor-pointer">
       <div className="relative aspect-square rounded-xl overflow-hidden bg-[#f2f2f2] dark:bg-[#1a1a1a] mb-2">
         <img src={song.artwork_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(song.title)}&background=0095f6&color=fff&size=200`} className="w-full h-full object-cover transition group-hover:scale-105" alt="" />
         <button
           onClick={(e) => { e.stopPropagation(); onPlay(); }}
           className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition"
+          aria-label="Play preview"
         >
           <span className="w-10 h-10 rounded-full bg-white dark:bg-[#121212]/90 flex items-center justify-center">
             <Play className="w-5 h-5 text-[#262626] dark:text-[#f5f5f5] fill-[#262626] ml-0.5" />
@@ -230,7 +231,7 @@ function SongCard({ song, onOpen, onPlay }: { song: Song; onOpen: () => void; on
       </div>
       <p className="text-xs font-semibold text-[#262626] dark:text-[#f5f5f5] truncate">{song.title}</p>
       <p className="text-xs text-[#8e8e8e] dark:text-[#a8a8a8] truncate">{song.artist}</p>
-    </button>
+    </div>
   );
 }
 
