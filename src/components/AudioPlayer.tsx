@@ -87,8 +87,9 @@ export default function AudioPlayer({ song, startTime = 0, clipDuration = null, 
       if (isFinite(d) && d > 0) setDuration(d);
       setState((s) => (s === 'loading' ? 'idle' : s));
     };
-    const handleWaiting = () => setState('loading');
-    const handleCanPlay = () => setState((s) => (s === 'loading' ? 'idle' : s));
+    const handleWaiting = () => setState((s) => (s === 'playing' ? 'loading' : s));
+    const handleCanPlay = () => setState((s) => (s === 'loading' ? (audio.paused ? 'idle' : 'playing') : s));
+    const handlePlaying = () => setState('playing');
     const handleTimeUpdate = () => {
       const t = audio.currentTime;
       if (clipDuration && clipDuration > 0 && t >= startTime + clipDuration) {
@@ -109,6 +110,7 @@ export default function AudioPlayer({ song, startTime = 0, clipDuration = null, 
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('waiting', handleWaiting);
     audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('playing', handlePlaying);
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
@@ -117,6 +119,7 @@ export default function AudioPlayer({ song, startTime = 0, clipDuration = null, 
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('waiting', handleWaiting);
       audio.removeEventListener('canplay', handleCanPlay);
+      audio.removeEventListener('playing', handlePlaying);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
