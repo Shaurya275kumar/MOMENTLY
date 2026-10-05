@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Plus, Search, Edit2, Trash2, X, Loader2, Check, Music as MusicIcon, Power, AlertCircle } from 'lucide-react';
 import { fetchSongs, createSong, updateSong, deleteSong, toggleSongEnabled, getGenres, formatDuration, type Song } from '../lib/music';
 import { uploadFile } from '../lib/upload';
+import { useAuth } from '../lib/auth';
 
 type Props = {
   onBack: () => void;
@@ -153,6 +154,7 @@ export default function AdminMusicDashboard({ onBack }: Props) {
 }
 
 function SongForm({ song, onClose, onSaved }: { song: Song | null; onClose: () => void; onSaved: () => void }) {
+  const { user } = useAuth();
   const genres = getGenres();
   const [title, setTitle] = useState(song?.title || '');
   const [artist, setArtist] = useState(song?.artist || '');
@@ -196,10 +198,10 @@ function SongForm({ song, onClose, onSaved }: { song: Song | null; onClose: () =
       let finalPreviewUrl = previewUrl;
 
       if (artworkFile) {
-        finalArtworkUrl = await uploadFile('music-artwork', artworkFile, `artwork-${Date.now()}`);
+        finalArtworkUrl = await uploadFile('music-artwork', artworkFile, user!.id);
       }
       if (audioFile) {
-        finalPreviewUrl = await uploadFile('music-previews', audioFile, `preview-${Date.now()}`);
+        finalPreviewUrl = await uploadFile('music-previews', audioFile, user!.id);
       }
 
       if (!finalPreviewUrl) {
