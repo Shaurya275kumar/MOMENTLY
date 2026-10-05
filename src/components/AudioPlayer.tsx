@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { Play, Pause, Loader2, Volume2, VolumeX, AlertCircle, X } from 'lucide-react';
 import { formatDuration } from '../lib/music';
 import type { Song } from '../lib/music';
+import AudioVisualizer from './AudioVisualizer';
 
 type Props = {
   song: Song;
@@ -23,6 +24,48 @@ export default function AudioPlayer({ song, startTime = 0, clipDuration = null, 
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
   const progressRef = useRef<HTMLDivElement>(null);
+
+  // Web Audio API for real-time visualization
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
+
+  const ensureAudioGraph = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio || audioCtxRef.current) return;
+    try {
+      const ctx = new AudioContext();
+      const node = ctx.createMediaElementSource(audio);
+      const an = ctx.createAnalyser();
+      an.fftSize = 128;
+      an.smoothingTimeConstant = 0.6;
+      node.connect(an);
+      an.connect(ctx.destination);
+      audioCtxRef.current = ctx;
+      sourceRef.current = node;
+      analyserRef.current = an;
+      setAnalyser(an);
+    } catch {
+      // AudioContext not available or already connected — visualizer stays disabled
+    }
+  }, []);
+
+  const resumeAudioContext = useCallback(() => {
+    if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume().catch(() => {});
+    }
+  }, []);
+
+  // Cleanup audio context on unmount
+  useEffect(() => {
+    return () => {
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close().catch(() => {});
+        audioCtxRef.current = null;
+      }
+    };
+  }, []);
 
   const effectiveDuration = clipDuration && clipDuration > 0
     ? Math.min(clipDuration, duration > 0 ? duration : clipDuration)
@@ -96,6 +139,8 @@ export default function AudioPlayer({ song, startTime = 0, clipDuration = null, 
     }
 
     try {
+      ensureAudioGraph();
+      resumeAudioContext();
       if (Math.abs(audio.currentTime - startTime) > 1 || audio.currentTime === 0) {
         audio.currentTime = startTime;
         setCurrentTime(startTime);
@@ -107,7 +152,7 @@ export default function AudioPlayer({ song, startTime = 0, clipDuration = null, 
     } catch {
       setState('error');
     }
-  }, [state, startTime, onPlay]);
+  }, [state, startTime, onPlay, ensureAudioGraph, resumeAudioContext]);
 
   const seek = (clientX: number) => {
     const audio = audioRef.current;
@@ -144,13 +189,14 @@ export default function AudioPlayer({ song, startTime = 0, clipDuration = null, 
         muted={muted}
         onToggleMute={() => setMuted(!muted)}
         onVolumeChange={(v) => { setVolume(v); setMuted(false); }}
+        analyser={analyser}
       />
     );
   }
 
   return (
     <div className={`bg-white dark:bg-[#121212] rounded-2xl border border-[#dbdbdb] dark:border-[#262626] p-4 sm:p-5 ${className}`}>
-      <audio ref={audioRef} src={song.preview_url} preload="metadata" />
+      <audio ref={audioRef} src={song.preview_url} preload="metadata" crossOrigin="anonymous" />
       <div className="flex items-center gap-4">
         <div className="relative flex-shrink-0">
           <img
@@ -199,6 +245,15 @@ export default function AudioPlayer({ song, startTime = 0, clipDuration = null, 
         </div>
       </div>
 
+      {/* Real-time audio visualizer */}
+      <AudioVisualizer
+        analyser={analyser}
+        isPlaying={state === 'playing'}
+        bars={48}
+        color="#0095f6"
+        className="w-full h-16 mt-3 rounded-lg bg-[#fafafa] dark:bg-[#0a0a0a]"
+      />
+
       <div className="mt-3 flex items-center gap-3">
         <span className="text-xs text-[#8e8e8e] dark:text-[#a8a8a8] tabular-nums w-10 text-right">{formatDuration(displayTime)}</span>
         <div
@@ -242,6 +297,7 @@ function CompactPlayer({
   muted,
   onToggleMute,
   onVolumeChange,
+  analyser,
 }: {
   state: PlayerState;
   playing: boolean;
@@ -258,6 +314,7 @@ function CompactPlayer({
   muted: boolean;
   onToggleMute: () => void;
   onVolumeChange: (v: number) => void;
+  analyser: AnalyserNode | null;
 }) {
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
@@ -282,6 +339,14 @@ function CompactPlayer({
         <p className="text-xs font-semibold text-[#262626] dark:text-[#f5f5f5] truncate">{song.title}</p>
         <p className="text-[10px] text-[#8e8e8e] dark:text-[#a8a8a8] truncate">{song.artist}</p>
       </div>
+      {/* Mini visualizer in compact mode */}
+      <AudioVisualizer
+        analyser={analyser}
+        isPlaying={playing}
+        bars={20}
+        color="#0095f6"
+        className="hidden sm:block w-20 h-8 flex-shrink-0"
+      />
       <div className="hidden sm:flex items-center gap-2 w-32">
         <span className="text-[10px] text-[#8e8e8e] dark:text-[#a8a8a8] tabular-nums">{formatDuration(displayTime)}</span>
         <div ref={progressRef} onClick={(e) => onSeek(e.clientX)} className="flex-1 h-1 bg-[#efefef] dark:bg-[#262626] rounded-full cursor-pointer relative">
