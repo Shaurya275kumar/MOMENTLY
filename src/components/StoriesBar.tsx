@@ -4,6 +4,7 @@ import { fetchStoryGroups, type StoryGroup } from '../lib/stories';
 import StoryViewer from './StoryViewer';
 import CreateStoryModal from './CreateStoryModal';
 import { Plus } from 'lucide-react';
+import StoryAvatar, { storyStatusOf } from './StoryAvatar';
 
 export default function StoriesBar({ onOpenProfile }: { onOpenProfile: (id: string) => void }) {
   const { user } = useAuth();
@@ -24,6 +25,7 @@ export default function StoriesBar({ onOpenProfile }: { onOpenProfile: (id: stri
   const openViewer = (index: number) => setViewerIndex(index);
 
   if (!user) return null;
+  const ownGroup = groups.find((g) => g.profile.id === user.id);
 
   return (
     <>
@@ -31,11 +33,10 @@ export default function StoriesBar({ onOpenProfile }: { onOpenProfile: (id: stri
         {/* Add-story tile (always first) */}
         <button onClick={() => setCreating(true)} className="flex flex-col items-center gap-1 flex-shrink-0">
           <div className="relative w-14 h-14">
-            <img
-              src={groups.find((g) => g.profile.id === user.id)?.profile.avatar_url ||
-                `https://ui-avatars.com/api/?name=${encodeURIComponent('me')}&background=random`}
-              className="w-14 h-14 rounded-full object-cover border-2 border-white dark:border-[#1a1a1a] ring-1 ring-[#dbdbdb] dark:ring-[#262626]"
-              alt=""
+            <StoryAvatar
+              src={ownGroup?.profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent('me')}&background=random`}
+              status={storyStatusOf(ownGroup)}
+              className="w-14 h-14"
             />
             <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-[#0095f6] text-white flex items-center justify-center border-2 border-white dark:border-[#1a1a1a]">
               <Plus className="w-3 h-3" strokeWidth={3} />
@@ -47,24 +48,17 @@ export default function StoriesBar({ onOpenProfile }: { onOpenProfile: (id: stri
         {groups
           .filter((g) => g.profile.id !== user.id)
           .map((g) => {
-            const seen = g.viewed;
-            const ring = seen
-              ? 'ring-1 ring-[#dbdbdb] dark:ring-[#262626]'
-              : 'bg-gradient-to-tr from-[#feda75] via-[#d62976] to-[#962fbf]';
             return (
               <button
                 key={g.profile.id}
                 onClick={() => openViewer(groups.indexOf(g))}
                 className="flex flex-col items-center gap-1 flex-shrink-0"
               >
-                <div className={`w-14 h-14 rounded-full p-[2.5px] ${ring}`}>
-                  <img
-                    src={g.profile.avatar_url ||
-                      `https://ui-avatars.com/api/?name=${encodeURIComponent(g.profile.username)}&background=random`}
-                    className="w-full h-full rounded-full object-cover border-2 border-white dark:border-[#1a1a1a]"
-                    alt=""
-                  />
-                </div>
+                <StoryAvatar
+                  src={g.profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(g.profile.username)}&background=random`}
+                  status={storyStatusOf(g)}
+                  className="w-14 h-14"
+                />
                 <span className="text-xs text-[#262626] dark:text-[#f5f5f5] max-w-[56px] truncate">{g.profile.username}</span>
               </button>
             );

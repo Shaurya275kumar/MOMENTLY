@@ -3,6 +3,8 @@ import { useAuth } from '../lib/auth';
 import { getProfile, updateProfile, uploadAvatar } from '../lib/profile';
 import { fetchUserPosts, fetchSavedPosts, deletePost } from '../lib/posts';
 import type { Profile, Post } from '../lib/supabase';
+import { fetchStoryGroups } from '../lib/stories';
+import StoryAvatar, { storyStatusOf, type StoryStatus } from './StoryAvatar';
 import { Camera, Check, Loader2, Trash2, Grid3x3, Bookmark, LogOut, UserX, Pencil } from 'lucide-react';
 import EditPostModal from './EditPostModal';
 
@@ -17,6 +19,7 @@ export default function ProfileScreen({ onBack }: { onBack: () => void; onSignOu
   const [deleteTarget, setDeleteTarget] = useState<Post | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [editTarget, setEditTarget] = useState<Post | null>(null);
+  const [storyStatus, setStoryStatus] = useState<StoryStatus>('none');
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -25,6 +28,8 @@ export default function ProfileScreen({ onBack }: { onBack: () => void; onSignOu
       setProfile(await getProfile(user.id));
       setPosts(await fetchUserPosts(user.id, user.id));
       setSavedPosts(await fetchSavedPosts(user.id));
+      const groups = await fetchStoryGroups(user.id);
+      setStoryStatus(storyStatusOf(groups.find((g) => g.profile.id === user.id)));
       setLoading(false);
     })();
   }, [user]);
@@ -73,7 +78,7 @@ export default function ProfileScreen({ onBack }: { onBack: () => void; onSignOu
       <button onClick={onBack} className="text-sm ig-gray mb-4 hover:text-[#262626] dark:hover:text-[#f5f5f5] dark:text-[#f5f5f5]">← Back</button>
       <div className="flex items-start gap-8 mb-8">
         <div className="relative shrink-0">
-          <img src={profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username)}&background=random`} className="w-24 h-24 rounded-full object-cover" alt="" />
+          <StoryAvatar src={profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username)}&background=random`} status={storyStatus} className="w-24 h-24" />
           {editing && (
             <>
               <button onClick={() => fileRef.current?.click()} className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-[#0095f6] text-white flex items-center justify-center ring-2 ring-white" aria-label="Change photo">

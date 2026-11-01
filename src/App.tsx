@@ -15,6 +15,7 @@ import ProfileScreen from './components/ProfileScreen';
 import ExploreScreen from './components/ExploreScreen';
 import ActivityScreen from './components/ActivityScreen';
 import StoryViewer from './components/StoryViewer';
+import StoryAvatar, { storyStatusOf } from './components/StoryAvatar';
 import MusicLibraryScreen from './components/MusicLibraryScreen';
 import SongDetailScreen from './components/SongDetailScreen';
 import AdminMusicDashboard from './components/AdminMusicDashboard';
@@ -261,13 +262,11 @@ function OtherProfile({ profileId, onBack, onMessage }: { profileId: string; onB
           className={`shrink-0 ${hasStories ? 'cursor-pointer' : 'cursor-default'}`}
           disabled={!hasStories}
         >
-          <div className={`w-24 h-24 rounded-full p-[3px] ${hasStories && !storiesSeen ? 'bg-gradient-to-tr from-[#feda75] via-[#d62976] to-[#962fbf]' : hasStories ? 'ring-1 ring-[#dbdbdb] dark:ring-[#262626]' : ''}`}>
-            <img
-              src={profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username)}&background=random`}
-              className="w-full h-full rounded-full object-cover border-2 border-white dark:border-[#1a1a1a]"
-              alt=""
-            />
-          </div>
+          <StoryAvatar
+            src={profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username)}&background=random`}
+            status={storyStatusOf(storyGroup)}
+            className="w-24 h-24"
+          />
         </button>
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-3 flex-wrap">
