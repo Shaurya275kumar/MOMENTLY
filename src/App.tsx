@@ -206,7 +206,6 @@ function OtherProfile({ profileId, onBack, onMessage }: { profileId: string; onB
   const [profile, setProfile] = useState<Profile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [following, setFollowing] = useState(false);
-  const [followsMe, setFollowsMe] = useState(false);
   const [loading, setLoading] = useState(true);
   const [storyGroups, setStoryGroups] = useState<StoryGroup[]>([]);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
@@ -226,13 +225,6 @@ function OtherProfile({ profileId, onBack, onMessage }: { profileId: string; onB
           .eq('followee_id', profileId)
           .maybeSingle();
         setFollowing(!!f);
-        const { data: back } = await supabase
-          .from('follows')
-          .select('follower_id')
-          .eq('follower_id', profileId)
-          .eq('followee_id', user.id)
-          .maybeSingle();
-        setFollowsMe(!!back);
       }
       setLoading(false);
     })();
@@ -249,7 +241,7 @@ function OtherProfile({ profileId, onBack, onMessage }: { profileId: string; onB
     setPosts(await fetchUserPosts(profileId, user.id));
   };
 
-  const isFriend = following && followsMe;
+  const canSeePosts = following;
 
   if (loading) return <div className="text-center py-20 text-sm text-[#8e8e8e] dark:text-[#a8a8a8]">Loading…</div>;
   if (!profile) return <div className="text-center py-20 text-sm text-[#8e8e8e] dark:text-[#a8a8a8]">Profile not found</div>;
@@ -342,7 +334,7 @@ function OtherProfile({ profileId, onBack, onMessage }: { profileId: string; onB
         </div>
         {posts.length === 0 && (
           <p className="text-center text-sm text-[#8e8e8e] dark:text-[#a8a8a8] py-16">
-            {isFriend ? 'No posts yet.' : 'Posts are only visible to friends. Follow each other to become friends.'}
+            {canSeePosts ? 'No posts yet.' : 'Follow this account to see their posts.'}
           </p>
         )}
       </div>
