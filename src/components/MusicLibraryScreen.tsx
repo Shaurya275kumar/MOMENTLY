@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
-import { Search, Music as MusicIcon, TrendingUp, Clock, Flame, Sparkles, X, ChevronRight, Play } from 'lucide-react';
-import { fetchSongs, fetchSongsByGenre, getGenres, formatDuration, incrementPlayCount, type Song } from '../lib/music';
+import { Search, Music as MusicIcon, TrendingUp, Clock, Flame, Sparkles, X, ChevronRight, Play, Plus, Loader2 } from 'lucide-react';
+import { fetchSongs, fetchSongsByGenre, formatDuration, importSongFromFile, incrementPlayCount, type Song } from '../lib/music';
+import { useAuth } from '../lib/auth';
 import AudioPlayer from './AudioPlayer';
 
 type Props = {
@@ -24,7 +25,10 @@ export default function MusicLibraryScreen({ onOpenSong, onBack }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [activeTab, setActiveTab] = useState<Tab>('popular');
-  const [genreFilter, setGenreFilter] = useState('All');
+  const { user } = useAuth();
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [nowPlaying, setNowPlaying] = useState<Song | null>(null);
   const playerRef = useRef<{ play: () => void } | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -34,7 +38,7 @@ export default function MusicLibraryScreen({ onOpenSong, onBack }: Props) {
     setError(null);
     try {
       const [list, genreMap] = await Promise.all([
-        fetchSongs({ query: query || undefined, genre: genreFilter !== 'All' ? genreFilter : undefined, category: activeTab, limit: 60 }),
+        fetchSongs({ query: query || undefined, category: activeTab, limit: 60 }),
         fetchSongsByGenre(),
       ]);
       setSongs(list);
@@ -44,15 +48,13 @@ export default function MusicLibraryScreen({ onOpenSong, onBack }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [query, genreFilter, activeTab]);
+  }, [query, activeTab]);
 
   useEffect(() => {
     clearTimeout(searchTimer.current);
     searchTimer.current = setTimeout(loadSongs, 250);
     return () => clearTimeout(searchTimer.current);
   }, [loadSongs]);
-
-  const genres = getGenres();
 
   const handlePlay = (song: Song) => {
     if (nowPlaying?.id === song.id) {
@@ -63,6 +65,22 @@ export default function MusicLibraryScreen({ onOpenSong, onBack }: Props) {
       incrementPlayCount(song.id).catch(() => {});
       // Auto-play after the new player mounts
       setTimeout(() => playerRef.current?.play(), 100);
+    }
+  };
+
+  const onImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !user) return;
+    setImporting(true);
+    setImportError(null);
+    try {
+      await importSongFromFile(file, user.id);
+      await loadSongs();
+    } catch (err) {
+      setImportError((err as Error).message || 'Could not add this song');
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -77,7 +95,17 @@ export default function MusicLibraryScreen({ onOpenSong, onBack }: Props) {
         <h1 className="text-xl font-bold text-[#262626] dark:text-[#f5f5f5] flex items-center gap-2">
           <MusicIcon className="w-6 h-6 text-[#0095f6]" /> Music
         </h1>
+        <button
+          onClick={() => fileRef.current?.click()}
+          disabled={importing || !user}
+          className="ml-auto w-9 h-9 rounded-full bg-[#0095f6] text-white flex items-center justify-center hover:bg-[#1877f2] transition disabled:opacity-40"
+          aria-label="Add music"
+        >
+          {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-5 h-5" />}
+        </button>
+        <input ref={fileRef} type="file" accept="audio/*" onChange={onImportFile} className="hidden" />
       </div>
+      {importError && <p className="text-sm text-[#ed4956] -mt-3 mb-4">{importError}</p>}
 
       {/* Search bar */}
       <div className="relative mb-4">
@@ -93,14 +121,6 @@ export default function MusicLibraryScreen({ onOpenSong, onBack }: Props) {
             <X className="w-4 h-4" />
           </button>
         )}
-      </div>
-
-      {/* Genre filter chips */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-1">
-        <GenreChip label="All" active={genreFilter === 'All'} onClick={() => setGenreFilter('All')} />
-        {genres.map((g) => (
-          <GenreChip key={g} label={g} active={genreFilter === g} onClick={() => setGenreFilter(g)} />
-        ))}
       </div>
 
       {/* Browse tabs */}
@@ -143,15 +163,12 @@ export default function MusicLibraryScreen({ onOpenSong, onBack }: Props) {
       )}
 
       {/* Genre browse sections (only when not searching and on popular tab) */}
-      {!isSearching && !loading && !error && activeTab === 'popular' && Object.keys(byGenre).length > 0 && genreFilter === 'All' && (
+      {!isSearching && !loading && !error && activeTab === 'popular' && Object.keys(byGenre).length > 0 && (
         <div className="mt-8 space-y-8">
           {Object.entries(byGenre).map(([genre, genreSongs]) => (
             <div key={genre}>
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-bold text-[#262626] dark:text-[#f5f5f5] uppercase tracking-wide">{genre}</h2>
-                <button onClick={() => setGenreFilter(genre)} className="text-xs text-[#0095f6] font-semibold flex items-center gap-0.5 hover:underline">
-                  See all <ChevronRight className="w-3 h-3" />
-                </button>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 {genreSongs.map((song) => (
@@ -175,19 +192,6 @@ export default function MusicLibraryScreen({ onOpenSong, onBack }: Props) {
         </div>
       )}
     </div>
-  );
-}
-
-function GenreChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition ${
-        active ? 'bg-[#262626] text-white' : 'bg-[#efefef] dark:bg-[#262626] text-[#262626] dark:text-[#f5f5f5] hover:bg-[#dbdbdb]'
-      }`}
-    >
-      {label}
-    </button>
   );
 }
 

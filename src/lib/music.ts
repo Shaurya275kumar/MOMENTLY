@@ -36,7 +36,6 @@ export type BrowseCategory = 'popular' | 'trending' | 'recent' | 'recommended';
 
 export type SongFilters = {
   query?: string;
-  genre?: string;
   category?: BrowseCategory;
   enabledOnly?: boolean;
   limit?: number;
@@ -70,11 +69,10 @@ export function formatDuration(seconds: number | null | undefined): string {
 }
 
 export async function fetchSongs(filters: SongFilters = {}): Promise<Song[]> {
-  const { query, genre, category, enabledOnly = true, limit = 50, offset = 0 } = filters;
+  const { query, category, enabledOnly = true, limit = 50, offset = 0 } = filters;
   let q = supabase.from('songs').select('*');
 
   if (enabledOnly) q = q.eq('is_enabled', true);
-  if (genre && genre !== 'All') q = q.ilike('genre', genre);
 
   if (query) {
     q = q.or(`title.ilike.%${query}%,artist.ilike.%${query}%,album.ilike.%${query}%`);
