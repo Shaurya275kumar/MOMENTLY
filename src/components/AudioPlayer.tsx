@@ -36,6 +36,10 @@ export default function AudioPlayer({ song, startTime = 0, clipDuration = null, 
     if (!audio || audioCtxRef.current) return;
     try {
       const ctx = new AudioContext();
+      if (ctx.state !== 'running') {
+        ctx.close().catch(() => {});
+        return;
+      }
       const node = ctx.createMediaElementSource(audio);
       const an = ctx.createAnalyser();
       an.fftSize = 128;
