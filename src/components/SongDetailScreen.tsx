@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Music as MusicIcon, Users, ImageIcon } from 'lucide-react';
-import { fetchSongById, fetchPostsUsingSong, formatDuration, type Song, type PostMusic } from '../lib/music';
+import { ArrowLeft, Music as MusicIcon, Users, ImageIcon, Pencil } from 'lucide-react';
+import { fetchSongById, fetchPostsUsingSong, formatDuration, updateSong, type Song, type PostMusic } from '../lib/music';
+import { useAuth } from '../lib/auth';
 import { supabase, type Post, type Profile } from '../lib/supabase';
 import AudioPlayer from './AudioPlayer';
 
@@ -15,6 +16,11 @@ export default function SongDetailScreen({ songId, onBack, onOpenProfile }: Prop
   const [posts, setPosts] = useState<(PostMusic & { post: Post & { profiles: Profile } })[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
+  const [savingTitle, setSavingTitle] = useState(false);
+  const [titleError, setTitleError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -59,6 +65,25 @@ export default function SongDetailScreen({ songId, onBack, onOpenProfile }: Prop
   );
   if (!song) return null;
 
+  const isOwner = !!user && song.user_id === user.id;
+
+  const saveTitle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const title = titleDraft.trim();
+    if (!title) return;
+    setSavingTitle(true);
+    setTitleError(null);
+    try {
+      await updateSong(song.id, { title });
+      setSong((s) => (s ? { ...s, title } : s));
+      setEditingTitle(false);
+    } catch (err) {
+      setTitleError((err as Error).message || 'Could not save the name');
+    } finally {
+      setSavingTitle(false);
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
       <button onClick={onBack} className="text-sm text-[#8e8e8e] dark:text-[#a8a8a8] mb-4 hover:text-[#262626] dark:hover:text-[#f5f5f5] dark:text-[#f5f5f5] flex items-center gap-1">
@@ -74,7 +99,38 @@ export default function SongDetailScreen({ songId, onBack, onOpenProfile }: Prop
         />
         <div className="flex-1 text-center sm:text-left">
           <p className="text-xs text-[#0095f6] font-semibold uppercase tracking-wide mb-1">Song</p>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#262626] dark:text-[#f5f5f5] mb-1">{song.title}</h1>
+          {editingTitle ? (
+            <form onSubmit={saveTitle} className="flex flex-wrap items-center gap-2 mb-1 justify-center sm:justify-start">
+              <input
+                autoFocus
+                value={titleDraft}
+                onChange={(e) => setTitleDraft(e.target.value)}
+                maxLength={120}
+                aria-label="Song name"
+                className="min-w-0 flex-1 px-3 py-2 bg-[#efefef] dark:bg-[#262626] rounded-lg text-lg font-bold text-[#262626] dark:text-[#f5f5f5] focus:outline-none focus:ring-2 focus:ring-[#0095f6] transition"
+              />
+              <button type="submit" disabled={savingTitle || !titleDraft.trim()} className="px-4 py-2 text-sm font-semibold bg-[#0095f6] text-white rounded-lg disabled:opacity-40">
+                {savingTitle ? 'Saving…' : 'Save'}
+              </button>
+              <button type="button" onClick={() => setEditingTitle(false)} className="px-4 py-2 text-sm font-semibold bg-[#efefef] dark:bg-[#262626] text-[#262626] dark:text-[#f5f5f5] rounded-lg">
+                Cancel
+              </button>
+            </form>
+          ) : (
+            <div className="flex items-center gap-2 mb-1 justify-center sm:justify-start">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#262626] dark:text-[#f5f5f5]">{song.title}</h1>
+              {isOwner && (
+                <button
+                  onClick={() => { setTitleDraft(song.title); setTitleError(null); setEditingTitle(true); }}
+                  aria-label="Edit song name"
+                  className="p-1.5 rounded-full text-[#8e8e8e] dark:text-[#a8a8a8] hover:text-[#262626] dark:hover:text-[#f5f5f5] hover:bg-[#efefef] dark:hover:bg-[#262626] transition"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          )}
+          {titleError && <p className="text-xs text-[#ed4956] mb-2">{titleError}</p>}
           <p className="text-lg text-[#8e8e8e] dark:text-[#a8a8a8] mb-3">{song.artist}</p>
           {song.album && <p className="text-sm text-[#8e8e8e] dark:text-[#a8a8a8] mb-1">Album: {song.album}</p>}
           <div className="flex items-center gap-3 justify-center sm:justify-start text-xs text-[#8e8e8e] dark:text-[#a8a8a8]">
