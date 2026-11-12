@@ -36,10 +36,6 @@ export default function AudioPlayer({ song, startTime = 0, clipDuration = null, 
     if (!audio || audioCtxRef.current) return;
     try {
       const ctx = new AudioContext();
-      if (ctx.state !== 'running') {
-        ctx.close().catch(() => {});
-        return;
-      }
       const node = ctx.createMediaElementSource(audio);
       const an = ctx.createAnalyser();
       an.fftSize = 128;
@@ -178,32 +174,37 @@ export default function AudioPlayer({ song, startTime = 0, clipDuration = null, 
 
   const displayTime = Math.max(0, currentTime - startTime);
 
+  const audioElement = <audio ref={audioRef} src={song.preview_url} preload="metadata" crossOrigin="anonymous" />;
+
   if (compact) {
     return (
-      <CompactPlayer
-        state={state}
-        playing={state === 'playing'}
-        onToggle={togglePlay}
-        progressPercent={progressPercent}
-        song={song}
-        displayTime={displayTime}
-        effectiveDuration={effectiveDuration}
-        onSeek={seek}
-        progressRef={progressRef}
-        className={className}
-        onClose={onClose}
-        volume={volume}
-        muted={muted}
-        onToggleMute={() => setMuted(!muted)}
-        onVolumeChange={(v) => { setVolume(v); setMuted(false); }}
-        analyser={analyser}
-      />
+      <>
+        {audioElement}
+        <CompactPlayer
+          state={state}
+          playing={state === 'playing'}
+          onToggle={togglePlay}
+          progressPercent={progressPercent}
+          song={song}
+          displayTime={displayTime}
+          effectiveDuration={effectiveDuration}
+          onSeek={seek}
+          progressRef={progressRef}
+          className={className}
+          onClose={onClose}
+          volume={volume}
+          muted={muted}
+          onToggleMute={() => setMuted(!muted)}
+          onVolumeChange={(v) => { setVolume(v); setMuted(false); }}
+          analyser={analyser}
+        />
+      </>
     );
   }
 
   return (
     <div className={`bg-white dark:bg-[#121212] rounded-2xl border border-[#dbdbdb] dark:border-[#262626] p-4 sm:p-5 ${className}`}>
-      <audio ref={audioRef} src={song.preview_url} preload="metadata" crossOrigin="anonymous" />
+      {audioElement}
       <div className="flex items-center gap-4">
         <div className="relative flex-shrink-0">
           <img
