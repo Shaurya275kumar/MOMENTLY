@@ -98,7 +98,35 @@ export async function fetchSongs(filters: SongFilters = {}): Promise<Song[]> {
   q = q.range(offset, offset + limit - 1);
   const { data, error } = await q;
   if (error) throw error;
-  return (data as Song[]) || [];
+  const songs = (data as Song[]) || [];
+
+  // Boost songs used in posts/reels to the top, preserving the original
+  // ordering (play_count / created_at) as a tiebreaker within each group.
+  if (songs.length > 0) {
+    const usage = await fetchSongUsageCounts(songs.map((s) => s.id));
+    songs.sort((a, b) => {
+      const ua = usage.get(a.id) ?? 0;
+      const ub = usage.get(b.id) ?? 0;
+      if ((ua > 0 ? 1 : 0) !== (ub > 0 ? 1 : 0)) return ub > 0 ? 1 : -1;
+      return 0; // stable: keep original relative order
+    });
+  }
+
+  return songs;
+}
+
+async function fetchSongUsageCounts(songIds: string[]): Promise<Map<string, number>> {
+  if (songIds.length === 0) return new Map();
+  const { data, error } = await supabase
+    .from('post_music')
+    .select('song_id')
+    .in('song_id', songIds);
+  if (error) return new Map();
+  const map = new Map<string, number>();
+  for (const row of (data as { song_id: string }[]) || []) {
+    map.set(row.song_id, (map.get(row.song_id) ?? 0) + 1);
+  }
+  return map;
 }
 
 export async function fetchSongById(id: string): Promise<Song | null> {
@@ -118,8 +146,19 @@ export async function fetchSongsByGenre(): Promise<Record<string, Song[]>> {
     .eq('is_enabled', true)
     .order('play_count', { ascending: false });
   if (error) throw error;
+  const all = (data as Song[]) || [];
+
+  // Boost songs used in posts/reels within each genre section too.
+  const usage = all.length > 0 ? await fetchSongUsageCounts(all.map((s) => s.id)) : new Map<string, number>();
+  all.sort((a, b) => {
+    const ua = usage.get(a.id) ?? 0;
+    const ub = usage.get(b.id) ?? 0;
+    if ((ua > 0 ? 1 : 0) !== (ub > 0 ? 1 : 0)) return ub > 0 ? 1 : -1;
+    return 0;
+  });
+
   const byGenre: Record<string, Song[]> = {};
-  for (const song of (data as Song[]) || []) {
+  for (const song of all) {
     const g = song.genre || 'Other';
     if (!byGenre[g]) byGenre[g] = [];
     if (byGenre[g].length < 6) byGenre[g].push(song);
