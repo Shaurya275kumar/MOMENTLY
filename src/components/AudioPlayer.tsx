@@ -9,6 +9,7 @@ type Props = {
   startTime?: number;
   clipDuration?: number | null;
   compact?: boolean;
+  autoPlay?: boolean;
   onPlay?: () => void;
   className?: string;
   onClose?: () => void;
@@ -16,7 +17,7 @@ type Props = {
 
 type PlayerState = 'idle' | 'loading' | 'playing' | 'paused' | 'error';
 
-export default function AudioPlayer({ song, startTime = 0, clipDuration = null, compact = false, onPlay, className = '', onClose }: Props) {
+export default function AudioPlayer({ song, startTime = 0, clipDuration = null, compact = false, autoPlay = false, onPlay, className = '', onClose }: Props) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [state, setState] = useState<PlayerState>('idle');
   const [currentTime, setCurrentTime] = useState(startTime);
@@ -130,6 +131,21 @@ export default function AudioPlayer({ song, startTime = 0, clipDuration = null, 
     const audio = audioRef.current;
     if (audio) audio.volume = muted ? 0 : volume;
   }, [volume, muted]);
+
+  // Auto-play on mount when requested (within the user's click gesture)
+  useEffect(() => {
+    if (!autoPlay) return;
+    const audio = audioRef.current;
+    if (!audio) return;
+    ensureAudioGraph();
+    resumeAudioContext();
+    let cancelled = false;
+    setState('loading');
+    audio.play().then(() => { if (!cancelled) { setState('playing'); onPlay?.(); } })
+      .catch(() => { if (!cancelled) setState('error'); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoPlay, song.id]);
 
   const togglePlay = useCallback(async () => {
     const audio = audioRef.current;

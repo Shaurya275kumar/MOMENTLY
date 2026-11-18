@@ -273,27 +273,14 @@ function EmptyState({ query }: { query: string }) {
 }
 
 const StickyPlayer = forwardRef<{ play: () => void }, { song: Song; onPlay: () => void; onClose: () => void }>(({ song, onPlay, onClose }, ref) => {
-  const audioPlayerRef = useRef<HTMLDivElement>(null);
-  const [playKey, setPlayKey] = useState(0);
+  const [autoPlay, setAutoPlay] = useState(false);
 
   useImperativeHandle(ref, () => ({
-    play: () => {
-      // Trigger a re-mount to auto-play by changing key
-      setPlayKey((k) => k + 1);
-    },
+    play: () => setAutoPlay(true),
   }), []);
 
-  // When playKey changes (except initial), simulate a click on the play button
-  useEffect(() => {
-    if (playKey === 0) return;
-    const btn = audioPlayerRef.current?.querySelector<HTMLButtonElement>('button[aria-label="Play"]');
-    btn?.click();
-  }, [playKey]);
-
   return (
-    <div ref={audioPlayerRef}>
-      <AudioPlayer key={playKey} song={song} compact onPlay={onPlay} onClose={onClose} />
-    </div>
+    <AudioPlayer song={song} compact autoPlay={autoPlay} onPlay={onPlay} onClose={onClose} />
   );
 });
 StickyPlayer.displayName = 'StickyPlayer';
