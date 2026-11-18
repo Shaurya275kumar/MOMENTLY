@@ -172,7 +172,7 @@ export default function MusicLibraryScreen({ onOpenSong, onBack }: Props) {
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 {genreSongs.map((song) => (
-                  <SongCard key={song.id} song={song} onOpen={() => onOpenSong(song.id)} onPlay={() => handlePlay(song)} />
+                  <SongCard key={song.id} song={song} onOpen={() => onOpenSong(song.id)} onPlay={() => handlePlay(song)} isPlaying={nowPlaying?.id === song.id} />
                 ))}
               </div>
             </div>
@@ -218,23 +218,22 @@ function SongRow({ song, onOpen, onPlay, isPlaying }: { song: Song; onOpen: () =
   );
 }
 
-function SongCard({ song, onOpen, onPlay }: { song: Song; onOpen: () => void; onPlay: () => void }) {
+function SongCard({ song, onOpen, onPlay, isPlaying }: { song: Song; onOpen: () => void; onPlay: () => void; isPlaying: boolean }) {
   return (
-    <div onClick={onOpen} className="group text-left cursor-pointer">
-      <div className="relative aspect-square rounded-xl overflow-hidden bg-[#f2f2f2] dark:bg-[#1a1a1a] mb-2">
+    <div className="group text-left">
+      <button onClick={onPlay} className="relative w-full aspect-square rounded-xl overflow-hidden bg-[#f2f2f2] dark:bg-[#1a1a1a] mb-2 block cursor-pointer" aria-label={`Play ${song.title}`}>
         <img src={song.artwork_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(song.title)}&background=0095f6&color=fff&size=200`} className="w-full h-full object-cover transition group-hover:scale-105" alt="" />
-        <button
-          onClick={(e) => { e.stopPropagation(); onPlay(); }}
-          className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition"
-          aria-label="Play preview"
-        >
+        <span className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition">
           <span className="w-10 h-10 rounded-full bg-white dark:bg-[#121212]/90 flex items-center justify-center">
             <Play className="w-5 h-5 text-[#262626] dark:text-[#f5f5f5] fill-[#262626] ml-0.5" />
           </span>
-        </button>
-      </div>
-      <p className="text-xs font-semibold text-[#262626] dark:text-[#f5f5f5] truncate">{song.title}</p>
-      <p className="text-xs text-[#8e8e8e] dark:text-[#a8a8a8] truncate">{song.artist}</p>
+        </span>
+        {isPlaying && <span className="absolute inset-0 flex items-center justify-center bg-black/50"><span className="flex items-end gap-0.5 h-5"><span className="w-0.5 bg-[#0095f6] animate-[bounce_0.5s_ease-in-out_infinite]" style={{ height: '60%' }} /><span className="w-0.5 bg-[#0095f6] animate-[bounce_0.7s_ease-in-out_infinite]" style={{ height: '100%' }} /><span className="w-0.5 bg-[#0095f6] animate-[bounce_0.6s_ease-in-out_infinite]" style={{ height: '80%' }} /></span></span>}
+      </button>
+      <button onClick={onOpen} className="block w-full text-left">
+        <p className="text-xs font-semibold text-[#262626] dark:text-[#f5f5f5] truncate hover:underline">{song.title}</p>
+        <p className="text-xs text-[#8e8e8e] dark:text-[#a8a8a8] truncate">{song.artist}</p>
+      </button>
     </div>
   );
 }
